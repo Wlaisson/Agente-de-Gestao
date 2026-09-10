@@ -1498,7 +1498,7 @@ Se não houver tarefas atribuídas a mim, retorne minhas_tarefas como array vazi
   }
 });
 
-if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
+if (!process.env.VERCEL) {
   app.listen(port, () => {
     console.log(`Servidor rodando em http://localhost:${port}`);
   });
