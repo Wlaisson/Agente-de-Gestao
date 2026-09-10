@@ -52,6 +52,23 @@ async function obterClienteOpenAI(userId) {
     };
   }
 
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('setup_usuario')
+      .select('openai_api_key, openai_model')
+      .not('openai_api_key', 'is', null)
+      .limit(1);
+
+    if (!error && data && data.length > 0 && data[0].openai_api_key) {
+      return {
+        openai: new OpenAI({ apiKey: data[0].openai_api_key }),
+        modelos: [data[0].openai_model || 'gpt-4o-mini', 'gpt-4o-mini']
+      };
+    }
+  } catch (e) {
+    console.error(e);
+  }
+
   throw new Error('Setup incompleto: Chave da OpenAI não configurada');
 }
 
@@ -134,7 +151,7 @@ const OPCOES_DEFAULT = {
 
 async function carregarOpcoes() {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('opcoes_sistema')
       .select('dados')
       .eq('id', 'padrao')
@@ -163,7 +180,7 @@ async function carregarOpcoes() {
 
 async function salvarOpcoes(opcoes) {
   try {
-    await supabase
+    await supabaseAdmin
       .from('opcoes_sistema')
       .upsert({ id: 'padrao', dados: opcoes, updated_at: new Date().toISOString() });
   } catch (e) {

@@ -2781,10 +2781,347 @@
             }
         }
 
+        .login-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 99999;
+            background: radial-gradient(circle at 50% 25%, #1e1b4b 0%, #090d16 65%, #030712 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+            backdrop-filter: blur(14px);
+        }
+
+        .login-card {
+            width: 100%;
+            max-width: 440px;
+            background: rgba(15, 23, 42, 0.88);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 24px;
+            padding: 2.5rem 2rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.05);
+            color: #f8fafc;
+            animation: loginFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes loginFadeIn {
+            from { opacity: 0; transform: scale(0.96) translateY(12px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .login-logo-box {
+            width: 58px;
+            height: 58px;
+            margin: 0 auto 1.25rem;
+            background: linear-gradient(135deg, #4f46e5, #7c3aed);
+            border-radius: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 10px 25px rgba(79, 70, 229, 0.45);
+        }
+
+        .login-title {
+            font-size: 1.55rem;
+            font-weight: 700;
+            color: #ffffff;
+            letter-spacing: -0.02em;
+            margin-bottom: 0.35rem;
+        }
+
+        .login-subtitle {
+            font-size: 0.88rem;
+            color: #94a3b8;
+        }
+
+        .login-form .form-group {
+            margin-bottom: 1.25rem;
+        }
+
+        .login-form label {
+            display: block;
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: #cbd5e1;
+            margin-bottom: 0.4rem;
+        }
+
+        .login-form input {
+            width: 100%;
+            padding: 0.85rem 1rem;
+            border-radius: 12px;
+            background: rgba(30, 41, 59, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            color: #ffffff;
+            font-size: 0.95rem;
+            outline: none;
+            transition: all 0.2s ease;
+        }
+
+        .login-form input:focus {
+            border-color: #6366f1;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25);
+            background: rgba(30, 41, 59, 0.95);
+        }
+
+        .btn-login {
+            width: 100%;
+            padding: 0.9rem;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #4f46e5, #6366f1);
+            color: white;
+            font-weight: 600;
+            font-size: 0.95rem;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            box-shadow: 0 4px 14px rgba(79, 70, 229, 0.4);
+            margin-top: 1.5rem;
+        }
+
+        .btn-login:hover {
+            background: linear-gradient(135deg, #4338ca, #4f46e5);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(79, 70, 229, 0.5);
+        }
+
+        .login-error {
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.35);
+            color: #fca5a5;
+            padding: 0.75rem 1rem;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            margin-bottom: 1.25rem;
+            display: none;
+        }
+
+        .login-footer-badge {
+            text-align: center;
+            margin-top: 1.75rem;
+            font-size: 0.75rem;
+            color: #64748b;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.4rem;
+        }
+
+        .btn-sidebar-logout {
+            background: transparent;
+            border: none;
+            color: #94a3b8;
+            cursor: pointer;
+            padding: 0.45rem;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-left: auto;
+            transition: all 0.2s ease;
+        }
+
+        .btn-sidebar-logout:hover {
+            color: #ef4444;
+            background: rgba(239, 68, 68, 0.12);
+        }
+
+        .user-role-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.15rem 0.5rem;
+            border-radius: 9999px;
+            font-size: 0.65rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .badge-role-admin {
+            background: rgba(147, 51, 234, 0.2);
+            color: #c084fc;
+            border: 1px solid rgba(147, 51, 234, 0.3);
+        }
+
+        .badge-role-membro {
+            background: rgba(59, 130, 246, 0.15);
+            color: #60a5fa;
+            border: 1px solid rgba(59, 130, 246, 0.25);
+        }
+
+        .permissions-selector-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+            gap: 0.75rem;
+            margin-top: 0.6rem;
+            padding: 1rem;
+            background: var(--surface-hover);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            max-height: 240px;
+            overflow-y: auto;
+        }
+
+        .perm-checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            font-size: 0.85rem;
+            cursor: pointer;
+            padding: 0.4rem 0.5rem;
+            border-radius: 6px;
+            transition: background 0.15s ease;
+        }
+
+        .perm-checkbox-item:hover {
+            background: rgba(0, 0, 0, 0.04);
+        }
+
+        .perm-checkbox-item input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            accent-color: var(--primary);
+            cursor: pointer;
+        }
+
+        .admin-users-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+            font-size: 0.9rem;
+        }
+
+        .admin-users-table th {
+            text-align: left;
+            padding: 0.85rem 1rem;
+            background: var(--surface-hover);
+            color: var(--text-muted);
+            font-weight: 600;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .admin-users-table td {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border);
+            color: var(--text);
+            vertical-align: middle;
+        }
+
+        .admin-users-table tr:hover td {
+            background: rgba(241, 245, 249, 0.5);
+        }
+
+        .user-table-cell-info {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .user-table-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #4f46e5, #8b5cf6);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.8rem;
+            flex-shrink: 0;
+        }
+
+        .badge-tab-item {
+            display: inline-block;
+            padding: 0.15rem 0.45rem;
+            border-radius: 6px;
+            background: var(--surface-hover);
+            border: 1px solid var(--border);
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            margin: 0.15rem;
+        }
+
+        .setup-status-card {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1.25rem 1.5rem;
+            border-radius: 14px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            margin-bottom: 1.5rem;
+            box-shadow: var(--card-shadow);
+        }
+
+        .setup-status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.35rem 0.85rem;
+            border-radius: 9999px;
+            font-size: 0.82rem;
+            font-weight: 600;
+        }
+
+        .setup-badge-ok {
+            background: rgba(16, 185, 129, 0.12);
+            color: #059669;
+            border: 1px solid rgba(16, 185, 129, 0.25);
+        }
+
+        .setup-badge-pending {
+            background: rgba(245, 158, 11, 0.12);
+            color: #d97706;
+            border: 1px solid rgba(245, 158, 11, 0.25);
+        }
     </style>
 </head>
 
 <body>
+    <div class="login-overlay" id="login-overlay">
+        <div class="login-card">
+            <div class="login-header">
+                <div class="login-logo-box">
+                    <svg viewBox="0 0 100 136" fill="none" style="width: 32px; height: 32px; color: white;"><g stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><line x1="53" y1="12" x2="53" y2="40"/><line x1="53" y1="40" x2="53" y2="68"/><line x1="53" y1="68" x2="53" y2="96"/><line x1="53" y1="96" x2="53" y2="124"/><line x1="53" y1="12" x2="18" y2="34"/><line x1="53" y1="12" x2="10" y2="68"/><line x1="53" y1="12" x2="88" y2="68"/><line x1="18" y1="34" x2="10" y2="68"/><line x1="18" y1="34" x2="53" y2="40"/><line x1="18" y1="34" x2="53" y2="68"/><line x1="18" y1="34" x2="18" y2="102"/><line x1="10" y1="68" x2="53" y2="68"/><line x1="10" y1="68" x2="18" y2="102"/><line x1="18" y1="102" x2="53" y2="68"/><line x1="18" y1="102" x2="53" y2="96"/><line x1="18" y1="102" x2="53" y2="124"/><line x1="53" y1="40" x2="84" y2="42"/><line x1="53" y1="68" x2="88" y2="68"/><line x1="53" y1="96" x2="84" y2="94"/><line x1="88" y1="68" x2="53" y2="124"/></g><g fill="currentColor"><circle cx="53" cy="12" r="6"/><circle cx="53" cy="40" r="5.5"/><circle cx="53" cy="68" r="5.5"/><circle cx="53" cy="96" r="5.5"/><circle cx="53" cy="124" r="6"/><circle cx="18" cy="34" r="5.5"/><circle cx="10" cy="68" r="5.5"/><circle cx="18" cy="102" r="5.5"/><circle cx="84" cy="42" r="5.5"/><circle cx="88" cy="68" r="5.5"/><circle cx="84" cy="94" r="5.5"/></g></svg>
+                </div>
+                <h1 class="login-title">WMA Report</h1>
+                <p class="login-subtitle">Acesse sua conta para gerenciar relatórios e IA</p>
+            </div>
+            <div id="login-erro" class="login-error"></div>
+            <form class="login-form" id="form-login" onsubmit="executarLogin(event)">
+                <div class="form-group">
+                    <label for="login-email">E-mail corporativo</label>
+                    <input type="email" id="login-email" placeholder="seu.email@empresa.com" required autocomplete="email">
+                </div>
+                <div class="form-group">
+                    <label for="login-password">Senha de acesso</label>
+                    <input type="password" id="login-password" placeholder="••••••••" required autocomplete="current-password">
+                </div>
+                <button type="submit" class="btn-login" id="btn-login-submit">
+                    <span>Acessar Plataforma</span>
+                    <svg class="app-icon" viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                </button>
+            </form>
+            <div class="login-footer-badge">
+                <svg class="app-icon" style="width: 14px; height: 14px;" viewBox="0 0 24 24"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                <span>Acesso restrito (Invite-Only) • Multi-tenant B2B</span>
+            </div>
+        </div>
+    </div>
     <div class="sidebar-backdrop" id="sidebar-backdrop" onclick="toggleSidebar()"></div>
     <div class="app-shell">
         <aside class="sidebar" id="app-sidebar">
@@ -2844,15 +3181,27 @@
                     <span class="item-icon"><svg class="app-icon" viewBox="0 0 24 24"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg></span>
                     <span class="item-label">Assuntos & Opções</span>
                 </button>
+                <button class="sidebar-item tab-btn" onclick="switchTab('setup-tab')" data-tab="setup-tab">
+                    <span class="item-icon"><svg class="app-icon" viewBox="0 0 24 24"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg></span>
+                    <span class="item-label">Minhas Chaves & IA</span>
+                </button>
+                <button class="sidebar-item tab-btn" id="sidebar-admin-btn" onclick="switchTab('usuarios-admin-tab')" data-tab="usuarios-admin-tab" style="display: none;">
+                    <span class="item-icon"><svg class="app-icon" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
+                    <span class="item-label">Gestão de Usuários</span>
+                    <span class="item-badge" style="background: rgba(147, 51, 234, 0.25); color: #c084fc;">RBAC</span>
+                </button>
             </div>
 
             <div class="sidebar-footer">
                 <div class="user-profile">
-                    <div class="user-avatar">WA</div>
+                    <div class="user-avatar" id="sidebar-user-avatar">WA</div>
                     <div class="user-info">
-                        <span class="user-name">Wlaisson Alves</span>
-                        <span class="user-status"><span class="status-dot"></span> Online</span>
+                        <span class="user-name" id="sidebar-user-name">Carregando...</span>
+                        <span class="user-status" id="sidebar-user-role"><span class="status-dot"></span> Online</span>
                     </div>
+                    <button type="button" class="btn-sidebar-logout" onclick="fazerLogout()" title="Sair do Sistema">
+                        <svg class="app-icon" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                    </button>
                 </div>
             </div>
         </aside>
@@ -3653,10 +4002,169 @@
                         <div id="lista-classificacoes-container" style="display: flex; flex-direction: column; gap: 1rem;"></div>
                     </div>
                 </div>
+                <div id="setup-tab" class="tab-content">
+                    <div class="home-welcome" style="margin-bottom: 1.5rem;">
+                        <div class="home-welcome-text">
+                            <h2>Configurações Pessoais de IA</h2>
+                            <p>Configure sua chave da API OpenAI e selecione seu modelo padrão para os agentes de áudio e relatórios.</p>
+                        </div>
+                    </div>
+
+                    <div class="setup-status-card" id="setup-status-container">
+                        <div>
+                            <div style="font-weight: 700; font-size: 1.05rem; color: var(--text); margin-bottom: 0.25rem;">Status da Conexão OpenAI</div>
+                            <div style="font-size: 0.85rem; color: var(--text-muted);" id="setup-status-desc">Verificando chave no banco de dados...</div>
+                        </div>
+                        <div id="setup-status-badge-container">
+                            <span class="setup-status-badge setup-badge-pending" id="setup-status-badge">Verificando...</span>
+                        </div>
+                    </div>
+
+                    <div class="card" style="max-width: 650px;">
+                        <h3 class="card-title" style="margin-bottom: 1.25rem;">
+                            <span><svg class="app-icon" viewBox="0 0 24 24"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg></span>
+                            Atualizar Minhas Chaves
+                        </h3>
+                        <form id="form-setup-usuario" onsubmit="salvarSetupUsuario(event)">
+                            <div class="form-group" style="margin-bottom: 1.25rem;">
+                                <label for="setup-openai-key" style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.4rem;">Chave da API da OpenAI (sk-...)</label>
+                                <div style="display: flex; gap: 0.5rem;">
+                                    <input type="password" id="setup-openai-key" placeholder="sk-proj-..." required style="flex: 1; padding: 0.75rem 1rem; border-radius: 10px; border: 1px solid var(--border); font-family: monospace; font-size: 0.9rem;">
+                                    <button type="button" class="btn btn-secondary" onclick="alternarVisibilidadeChave()" style="width: auto; padding: 0 1rem;" title="Mostrar / Ocultar">
+                                        <svg class="app-icon" id="setup-eye-icon" viewBox="0 0 24 24"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                                    </button>
+                                </div>
+                                <small style="display: block; color: var(--text-muted); margin-top: 0.4rem; font-size: 0.78rem;">Sua chave é armazenada de forma segura no Supabase.</small>
+                            </div>
+
+                            <div class="form-group" style="margin-bottom: 1.5rem;">
+                                <label for="setup-openai-model" style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.4rem;">Modelo de Linguagem Padrão</label>
+                                <select id="setup-openai-model" style="width: 100%; padding: 0.75rem 1rem; border-radius: 10px; border: 1px solid var(--border); font-size: 0.9rem; background: var(--surface);">
+                                    <option value="gpt-4o-mini">GPT-4o Mini (Recomendado - Mais rápido e econômico)</option>
+                                    <option value="gpt-4o">GPT-4o (Completo / Alta capacidade)</option>
+                                    <option value="gpt-5-nano">GPT-5 Nano (Ultra veloz)</option>
+                                </select>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary" id="btn-salvar-setup" style="width: auto; padding: 0.8rem 1.75rem;">
+                                <span><svg class="app-icon" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg></span>
+                                Salvar Minhas Configurações
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <div id="usuarios-admin-tab" class="tab-content">
+                    <div class="home-welcome" style="margin-bottom: 1.5rem;">
+                        <div class="home-welcome-text">
+                            <h2>Gestão de Usuários & Permissões (RBAC)</h2>
+                            <p>Controle de acesso restrito (Invite-Only). Cadastre novos usuários e defina exatamente quais abas cada um pode acessar.</p>
+                        </div>
+                        <div>
+                            <button type="button" class="btn btn-primary" onclick="abrirModalNovoUsuario()" style="width: auto; padding: 0.65rem 1.25rem;">
+                                <span><svg class="app-icon" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span>
+                                Cadastrar Novo Usuário
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                            <h3 class="card-title" style="margin: 0;">
+                                <span><svg class="app-icon" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
+                                Usuários com Acesso à Plataforma
+                            </h3>
+                            <button class="btn btn-secondary" onclick="carregarListaUsuariosAdmin(true)" style="width: auto; padding: 0.4rem 0.8rem; font-size: 0.8rem;">
+                                Sincronizar Lista
+                            </button>
+                        </div>
+
+                        <div style="overflow-x: auto;">
+                            <table class="admin-users-table">
+                                <thead>
+                                    <tr>
+                                        <th>Usuário</th>
+                                        <th>Perfil</th>
+                                        <th>Abas Permitidas</th>
+                                        <th>Cadastrado em</th>
+                                        <th style="text-align: right;">Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="admin-users-tbody">
+                                    <tr>
+                                        <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 2rem;">Carregando usuários do Supabase...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
             </div>
         </main>
     </div>
 </div>
+
+    <div class="modal-overlay" id="modalNovoUsuario">
+        <div class="modal" style="max-width: 620px;">
+            <div class="modal-header">
+                <h3 class="modal-title">
+                    <svg class="app-icon" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+                    Cadastrar Novo Usuário (Invite-Only)
+                </h3>
+                <button class="modal-close" onclick="fecharModalNovoUsuario()">&times;</button>
+            </div>
+            <form id="formNovoUsuario" onsubmit="salvarNovoUsuario(event)">
+                <div class="modal-body">
+                    <div id="novo-usuario-erro" class="login-error" style="margin-bottom: 1rem;"></div>
+                    
+                    <div class="form-group" style="margin-bottom: 1rem;">
+                        <label for="novo-user-nome" style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem;">Nome Completo</label>
+                        <input type="text" id="novo-user-nome" placeholder="Ex: Maria Santos" required style="width: 100%; padding: 0.75rem 1rem; border-radius: 10px; border: 1px solid var(--border);">
+                    </div>
+
+                    <div class="grid-2" style="margin-bottom: 1rem;">
+                        <div class="form-group">
+                            <label for="novo-user-email" style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem;">E-mail Corporativo</label>
+                            <input type="email" id="novo-user-email" placeholder="usuario@empresa.com" required style="width: 100%; padding: 0.75rem 1rem; border-radius: 10px; border: 1px solid var(--border);">
+                        </div>
+                        <div class="form-group">
+                            <label for="novo-user-senha" style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem;">Senha Inicial</label>
+                            <input type="password" id="novo-user-senha" placeholder="Mínimo 6 caracteres" required minlength="6" style="width: 100%; padding: 0.75rem 1rem; border-radius: 10px; border: 1px solid var(--border);">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+                            <label style="font-size: 0.85rem; font-weight: 600; margin: 0;">Permissões de Acesso às Abas (RBAC)</label>
+                            <div style="display: flex; gap: 0.5rem;">
+                                <button type="button" class="btn-time-shortcut" onclick="marcarTodasPermissoes(true)">Marcar Todas</button>
+                                <button type="button" class="btn-time-shortcut btn-time-clear" onclick="marcarTodasPermissoes(false)">Desmarcar</button>
+                            </div>
+                        </div>
+                        <div class="permissions-selector-grid" id="grid-permissoes-usuario">
+                            <label class="perm-checkbox-item"><input type="checkbox" name="perm_aba" value="home-tab" checked> Início / Home</label>
+                            <label class="perm-checkbox-item"><input type="checkbox" name="perm_aba" value="registro-tab" checked> Criar Nova Atividade</label>
+                            <label class="perm-checkbox-item"><input type="checkbox" name="perm_aba" value="kanban-tab" checked> Quadro Kanban</label>
+                            <label class="perm-checkbox-item"><input type="checkbox" name="perm_aba" value="campanhas-tab" checked> Campanhas</label>
+                            <label class="perm-checkbox-item"><input type="checkbox" name="perm_aba" value="reporter-tab" checked> Agente Reporter 4</label>
+                            <label class="perm-checkbox-item"><input type="checkbox" name="perm_aba" value="semana-tab" checked> Atividades da Semana</label>
+                            <label class="perm-checkbox-item"><input type="checkbox" name="perm_aba" value="resumo-tab" checked> Resumo Executivo</label>
+                            <label class="perm-checkbox-item"><input type="checkbox" name="perm_aba" value="relatorios-tab" checked> Dashboard & Relatórios</label>
+                            <label class="perm-checkbox-item"><input type="checkbox" name="perm_aba" value="tarefas-tab" checked> Tarefas de Reuniões</label>
+                            <label class="perm-checkbox-item"><input type="checkbox" name="perm_aba" value="gerenciar-tab" checked> Assuntos & Opções</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" style="width: auto;" onclick="fecharModalNovoUsuario()">Cancelar</button>
+                    <button type="submit" class="btn btn-primary" id="btn-submit-novo-user" style="width: auto;">
+                        <span><svg class="app-icon" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span>
+                        Criar Usuário com Acesso
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
 
     <div class="modal-overlay" id="campanhaModal">
         <div class="modal" style="max-width: 550px;">
@@ -4033,6 +4541,438 @@
     <datalist id="lista-assuntos-sugeridos"></datalist>
 
     <script>
+        const originalFetch = window.fetch;
+        window.fetch = function (input, init = {}) {
+            const url = typeof input === 'string' ? input : (input && input.url ? input.url : '');
+            if (url.includes('/api/')) {
+                const user = obterUsuarioLogado();
+                const session = obterSessaoAuth();
+                const headers = new Headers(init.headers || (typeof input === 'object' && input.headers ? input.headers : {}));
+                if (user && user.id && !headers.has('x-user-id')) {
+                    headers.set('x-user-id', user.id);
+                }
+                if (session && session.access_token && !headers.has('Authorization')) {
+                    headers.set('Authorization', `Bearer ${session.access_token}`);
+                }
+                init.headers = headers;
+            }
+            return originalFetch.call(this, input, init);
+        };
+
+        function obterUsuarioLogado() {
+            try {
+                const raw = localStorage.getItem('auth_user');
+                return raw ? JSON.parse(raw) : null;
+            } catch (e) {
+                return null;
+            }
+        }
+
+        function obterSessaoAuth() {
+            try {
+                const raw = localStorage.getItem('auth_session');
+                return raw ? JSON.parse(raw) : null;
+            } catch (e) {
+                return null;
+            }
+        }
+
+        function salvarAutenticacao(session, user) {
+            localStorage.setItem('auth_session', JSON.stringify(session));
+            localStorage.setItem('auth_user', JSON.stringify(user));
+        }
+
+        function limparAutenticacao() {
+            localStorage.removeItem('auth_session');
+            localStorage.removeItem('auth_user');
+        }
+
+        function abrirTelaLogin() {
+            const overlay = document.getElementById('login-overlay');
+            if (overlay) overlay.style.display = 'flex';
+        }
+
+        function fecharTelaLogin() {
+            const overlay = document.getElementById('login-overlay');
+            if (overlay) overlay.style.display = 'none';
+        }
+
+        async function executarLogin(event) {
+            event.preventDefault();
+            const emailInput = document.getElementById('login-email');
+            const passInput = document.getElementById('login-password');
+            const erroEl = document.getElementById('login-erro');
+            const submitBtn = document.getElementById('btn-login-submit');
+
+            if (!emailInput || !passInput) return;
+            const email = emailInput.value.trim();
+            const password = passInput.value;
+
+            if (erroEl) {
+                erroEl.style.display = 'none';
+                erroEl.textContent = '';
+            }
+
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<span>Verificando credenciais...</span>';
+            }
+
+            try {
+                const res = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await res.json();
+
+                if (!res.ok || data.error) {
+                    throw new Error(data.error || 'Credenciais inválidas.');
+                }
+
+                salvarAutenticacao(data.session, data.user);
+                fecharTelaLogin();
+                aplicarPermissoesRBAC(data.user);
+                inicializarDadosUsuarioLogado();
+                mostrarToast(`Bem-vindo, ${data.user.nome || data.user.email}!`, 'success');
+            } catch (err) {
+                if (erroEl) {
+                    erroEl.textContent = err.message;
+                    erroEl.style.display = 'block';
+                }
+            } finally {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<span>Acessar Plataforma</span><svg class="app-icon" viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>';
+                }
+            }
+        }
+
+        function fazerLogout() {
+            if (!confirm('Deseja realmente sair da plataforma?')) return;
+            limparAutenticacao();
+            abrirTelaLogin();
+            const emailInput = document.getElementById('login-email');
+            const passInput = document.getElementById('login-password');
+            if (emailInput) emailInput.value = '';
+            if (passInput) passInput.value = '';
+            mostrarToast('Sessão encerrada com sucesso.', 'info');
+        }
+
+        function aplicarPermissoesRBAC(user) {
+            if (!user) return;
+            const avatarEl = document.getElementById('sidebar-user-avatar');
+            const nameEl = document.getElementById('sidebar-user-name');
+            const roleEl = document.getElementById('sidebar-user-role');
+            const adminBtn = document.getElementById('sidebar-admin-btn');
+
+            const nome = user.nome || user.email.split('@')[0];
+            const partes = nome.trim().split(' ');
+            const iniciais = partes.length > 1
+                ? (partes[0][0] + partes[partes.length - 1][0]).toUpperCase()
+                : nome.substring(0, 2).toUpperCase();
+
+            if (avatarEl) avatarEl.textContent = iniciais;
+            if (nameEl) nameEl.textContent = nome;
+
+            if (roleEl) {
+                if (user.is_admin) {
+                    roleEl.innerHTML = '<span class="status-dot"></span> <span class="user-role-badge badge-role-admin">Administrador</span>';
+                } else {
+                    roleEl.innerHTML = '<span class="status-dot"></span> <span class="user-role-badge badge-role-membro">Membro</span>';
+                }
+            }
+
+            if (user.is_admin) {
+                if (adminBtn) adminBtn.style.display = 'flex';
+                document.querySelectorAll('.sidebar-item[data-tab]').forEach(btn => {
+                    btn.style.display = 'flex';
+                });
+            } else {
+                if (adminBtn) adminBtn.style.display = 'none';
+                const abasPermitidas = (user.permissoes && Array.isArray(user.permissoes.abas))
+                    ? user.permissoes.abas
+                    : ['home-tab'];
+
+                document.querySelectorAll('.sidebar-item[data-tab]').forEach(btn => {
+                    const tabName = btn.getAttribute('data-tab');
+                    if (tabName === 'setup-tab') {
+                        btn.style.display = 'flex';
+                    } else if (abasPermitidas.includes(tabName)) {
+                        btn.style.display = 'flex';
+                    } else {
+                        btn.style.display = 'none';
+                    }
+                });
+            }
+        }
+
+        function alternarVisibilidadeChave() {
+            const input = document.getElementById('setup-openai-key');
+            if (!input) return;
+            input.type = input.type === 'password' ? 'text' : 'password';
+        }
+
+        async function carregarSetupUsuario() {
+            const user = obterUsuarioLogado();
+            if (!user) return;
+            const descEl = document.getElementById('setup-status-desc');
+            const badgeEl = document.getElementById('setup-status-badge');
+            const keyInput = document.getElementById('setup-openai-key');
+            const modelSelect = document.getElementById('setup-openai-model');
+
+            try {
+                const res = await fetch(`/api/setup/${user.id}`);
+                const data = await res.json();
+
+                if (data.status === 'success' && data.configured) {
+                    if (descEl) descEl.textContent = `Chave ativa: ${data.apiKeyMasked}`;
+                    if (badgeEl) {
+                        badgeEl.className = 'setup-status-badge setup-badge-ok';
+                        badgeEl.textContent = 'Conectada';
+                    }
+                    if (modelSelect && data.openai_model) {
+                        modelSelect.value = data.openai_model;
+                    }
+                } else {
+                    if (descEl) descEl.textContent = 'Nenhuma chave configurada. Insira sua chave da OpenAI abaixo.';
+                    if (badgeEl) {
+                        badgeEl.className = 'setup-status-badge setup-badge-pending';
+                        badgeEl.textContent = 'Pendente';
+                    }
+                }
+            } catch (err) {
+                if (descEl) descEl.textContent = 'Erro ao consultar status no banco.';
+            }
+        }
+
+        async function salvarSetupUsuario(event) {
+            event.preventDefault();
+            const user = obterUsuarioLogado();
+            if (!user) return;
+
+            const keyInput = document.getElementById('setup-openai-key');
+            const modelSelect = document.getElementById('setup-openai-model');
+            const btnSalvar = document.getElementById('btn-salvar-setup');
+
+            const openai_api_key = keyInput ? keyInput.value.trim() : '';
+            const openai_model = modelSelect ? modelSelect.value : 'gpt-4o-mini';
+
+            if (!openai_api_key) {
+                mostrarToast('Por favor, informe uma chave válida.', 'warning');
+                return;
+            }
+
+            if (btnSalvar) {
+                btnSalvar.disabled = true;
+                btnSalvar.textContent = 'Salvando no Supabase...';
+            }
+
+            try {
+                const res = await fetch('/api/setup', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        userId: user.id,
+                        openai_api_key,
+                        openai_model
+                    })
+                });
+                const data = await res.json();
+
+                if (!res.ok || data.error) {
+                    throw new Error(data.error || 'Erro ao salvar chave.');
+                }
+
+                mostrarToast('Configurações de IA salvas com sucesso!', 'success');
+                if (keyInput) keyInput.value = '';
+                carregarSetupUsuario();
+            } catch (err) {
+                mostrarToast(err.message, 'error');
+            } finally {
+                if (btnSalvar) {
+                    btnSalvar.disabled = false;
+                    btnSalvar.innerHTML = '<span><svg class="app-icon" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg></span> Salvar Minhas Configurações';
+                }
+            }
+        }
+
+        async function carregarListaUsuariosAdmin(forcado = false) {
+            const user = obterUsuarioLogado();
+            if (!user || !user.is_admin) return;
+
+            const tbody = document.getElementById('admin-users-tbody');
+            if (!tbody) return;
+
+            if (forcado) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 2rem; color: var(--text-muted);">Sincronizando com o Supabase...</td></tr>';
+            }
+
+            try {
+                const res = await fetch('/api/admin/usuarios');
+                const result = await res.json();
+
+                if (!res.ok || result.status !== 'success') {
+                    throw new Error(result.error || 'Erro ao buscar usuários.');
+                }
+
+                const usuarios = result.data || [];
+                if (usuarios.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 2rem; color: var(--text-muted);">Nenhum usuário cadastrado além do administrador.</td></tr>';
+                    return;
+                }
+
+                let html = '';
+                usuarios.forEach(u => {
+                    const nome = u.nome || u.email.split('@')[0];
+                    const partes = nome.trim().split(' ');
+                    const iniciais = partes.length > 1
+                        ? (partes[0][0] + partes[partes.length - 1][0]).toUpperCase()
+                        : nome.substring(0, 2).toUpperCase();
+
+                    const dataFormatada = u.created_at ? new Date(u.created_at).toLocaleDateString('pt-BR') : '-';
+                    const roleBadge = u.is_admin
+                        ? '<span class="user-role-badge badge-role-admin">Admin</span>'
+                        : '<span class="user-role-badge badge-role-membro">Membro</span>';
+
+                    let abasHtml = '';
+                    if (u.is_admin) {
+                        abasHtml = '<span class="badge-tab-item" style="color: #9333ea; font-weight: 600;">Acesso Total (Todas as Abas)</span>';
+                    } else if (u.permissoes && Array.isArray(u.permissoes.abas) && u.permissoes.abas.length > 0) {
+                        abasHtml = u.permissoes.abas.map(a => `<span class="badge-tab-item">${TAB_TITULOS[a] || a}</span>`).join(' ');
+                    } else {
+                        abasHtml = '<span class="badge-tab-item" style="color: var(--danger);">Sem abas atribuídas</span>';
+                    }
+
+                    const acaoExcluir = u.is_admin
+                        ? '<span style="color: var(--text-muted); font-size: 0.8rem;">Protegido</span>'
+                        : `<button type="button" class="btn btn-secondary" onclick="excluirUsuarioAdmin('${u.id}', '${nome}')" style="width: auto; padding: 0.35rem 0.75rem; font-size: 0.8rem; color: var(--danger); border-color: rgba(239, 68, 68, 0.3);">Excluir</button>`;
+
+                    html += `
+                        <tr>
+                            <td>
+                                <div class="user-table-cell-info">
+                                    <div class="user-table-avatar">${iniciais}</div>
+                                    <div>
+                                        <div style="font-weight: 600;">${nome}</div>
+                                        <div style="font-size: 0.8rem; color: var(--text-muted);">${u.email}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>${roleBadge}</td>
+                            <td style="max-width: 320px;">${abasHtml}</td>
+                            <td>${dataFormatada}</td>
+                            <td style="text-align: right;">${acaoExcluir}</td>
+                        </tr>
+                    `;
+                });
+
+                tbody.innerHTML = html;
+            } catch (err) {
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--danger); padding: 2rem;">Erro ao carregar usuários: ${err.message}</td></tr>`;
+            }
+        }
+
+        function abrirModalNovoUsuario() {
+            const modal = document.getElementById('modalNovoUsuario');
+            const erroEl = document.getElementById('novo-usuario-erro');
+            if (erroEl) erroEl.style.display = 'none';
+            if (modal) modal.classList.add('active');
+        }
+
+        function fecharModalNovoUsuario() {
+            const modal = document.getElementById('modalNovoUsuario');
+            if (modal) modal.classList.remove('active');
+        }
+
+        function marcarTodasPermissoes(marcar) {
+            document.querySelectorAll('#grid-permissoes-usuario input[type="checkbox"]').forEach(chk => {
+                chk.checked = marcar;
+            });
+        }
+
+        async function salvarNovoUsuario(event) {
+            event.preventDefault();
+            const nomeInput = document.getElementById('novo-user-nome');
+            const emailInput = document.getElementById('novo-user-email');
+            const senhaInput = document.getElementById('novo-user-senha');
+            const erroEl = document.getElementById('novo-usuario-erro');
+            const btnSubmit = document.getElementById('btn-submit-novo-user');
+
+            if (!nomeInput || !emailInput || !senhaInput) return;
+            const nome = nomeInput.value.trim();
+            const email = emailInput.value.trim();
+            const password = senhaInput.value;
+
+            const abas = [];
+            document.querySelectorAll('#grid-permissoes-usuario input[type="checkbox"]:checked').forEach(chk => {
+                abas.push(chk.value);
+            });
+
+            if (erroEl) erroEl.style.display = 'none';
+            if (btnSubmit) {
+                btnSubmit.disabled = true;
+                btnSubmit.textContent = 'Criando no Supabase Auth...';
+            }
+
+            try {
+                const res = await fetch('/api/admin/usuarios', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        nome,
+                        email,
+                        password,
+                        permissoes: { abas }
+                    })
+                });
+
+                const data = await res.json();
+                if (!res.ok || data.status !== 'success') {
+                    throw new Error(data.error || 'Erro ao criar usuário.');
+                }
+
+                mostrarToast('Usuário cadastrado com sucesso!', 'success');
+                fecharModalNovoUsuario();
+                nomeInput.value = '';
+                emailInput.value = '';
+                senhaInput.value = '';
+                carregarListaUsuariosAdmin(true);
+            } catch (err) {
+                if (erroEl) {
+                    erroEl.textContent = err.message;
+                    erroEl.style.display = 'block';
+                }
+            } finally {
+                if (btnSubmit) {
+                    btnSubmit.disabled = false;
+                    btnSubmit.innerHTML = '<span><svg class="app-icon" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span> Criar Usuário com Acesso';
+                }
+            }
+        }
+
+        async function excluirUsuarioAdmin(id, nome) {
+            if (!confirm(`Tem certeza que deseja excluir o usuário "${nome}"? O acesso será revogado imediatamente.`)) {
+                return;
+            }
+
+            try {
+                const res = await fetch(`/api/admin/usuarios/${id}`, {
+                    method: 'DELETE'
+                });
+                const data = await res.json();
+
+                if (!res.ok || data.status !== 'success') {
+                    throw new Error(data.error || 'Erro ao excluir usuário.');
+                }
+
+                mostrarToast('Usuário removido com sucesso.', 'info');
+                carregarListaUsuariosAdmin(true);
+            } catch (err) {
+                mostrarToast(err.message, 'error');
+            }
+        }
 
         const APP_SVG_ICONS = {
             home: '<svg class="app-icon" viewBox="0 0 24 24"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>',
@@ -5005,7 +5945,9 @@
             'resumo-tab': 'Resumo Executivo',
             'relatorios-tab': 'Dashboard & Relatórios',
             'tarefas-tab': 'Tarefas de Reuniões',
-            'gerenciar-tab': 'Gerenciamento de Assuntos & Opções'
+            'gerenciar-tab': 'Gerenciamento de Assuntos & Opções',
+            'setup-tab': 'Configurações de IA & Chaves',
+            'usuarios-admin-tab': 'Gestão de Usuários (RBAC)'
         };
 
         let campanhasDados = [];
@@ -5020,6 +5962,20 @@
         }
 
         function switchTab(tabId) {
+            const user = obterUsuarioLogado();
+            if (user && !user.is_admin && tabId === 'usuarios-admin-tab') {
+                mostrarToast('Acesso restrito ao administrador.', 'error');
+                switchTab('home-tab');
+                return;
+            }
+            if (user && !user.is_admin && user.permissoes && Array.isArray(user.permissoes.abas)) {
+                if (tabId !== 'setup-tab' && !user.permissoes.abas.includes(tabId)) {
+                    mostrarToast('Acesso restrito para o seu usuário.', 'warning');
+                    switchTab(user.permissoes.abas[0] || 'home-tab');
+                    return;
+                }
+            }
+
             document.querySelectorAll('.tab-content').forEach(content => {
                 content.classList.remove('active');
             });
@@ -5059,6 +6015,10 @@
                 carregarTarefas();
             } else if (tabId === 'kanban-tab') {
                 carregarKanban();
+            } else if (tabId === 'setup-tab') {
+                carregarSetupUsuario();
+            } else if (tabId === 'usuarios-admin-tab') {
+                carregarListaUsuariosAdmin();
             }
         }
 
@@ -5519,25 +6479,7 @@
             mostrarToast('Campanha removida.', 'info');
         }
 
-        document.addEventListener("DOMContentLoaded", () => {
-            const inputData = document.getElementById('data');
-            const hojeLocal = new Date();
-            const ano = hojeLocal.getFullYear();
-            const mes = String(hojeLocal.getMonth() + 1).padStart(2, '0');
-            const dia = String(hojeLocal.getDate()).padStart(2, '0');
-            const hoje = `${ano}-${mes}-${dia}`;
-            inputData.value = hoje;
-            
-            inputData.addEventListener('input', calcularDatasDerivadas);
-            inputData.addEventListener('change', calcularDatasDerivadas);
-            
-            const editData = document.getElementById('edit-data');
-            editData.addEventListener('input', calcularDatasDerivadasEdicao);
-            editData.addEventListener('change', calcularDatasDerivadasEdicao);
-            
-            const reuniaoData = document.getElementById('reuniao-data');
-            if(reuniaoData) reuniaoData.value = hoje;
-
+        function inicializarDadosUsuarioLogado() {
             calcularDatasDerivadas();
             atualizarDashboard();
             inicializarSemanaFiltro();
@@ -5549,7 +6491,47 @@
             carregarDadosPlanilha().then(() => {
                 atualizarHomeDashboard();
             });
-            switchTab('home-tab');
+            const user = obterUsuarioLogado();
+            if (user && !user.is_admin && user.permissoes && Array.isArray(user.permissoes.abas) && user.permissoes.abas.length > 0) {
+                switchTab(user.permissoes.abas[0]);
+            } else {
+                switchTab('home-tab');
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            const inputData = document.getElementById('data');
+            const hojeLocal = new Date();
+            const ano = hojeLocal.getFullYear();
+            const mes = String(hojeLocal.getMonth() + 1).padStart(2, '0');
+            const dia = String(hojeLocal.getDate()).padStart(2, '0');
+            const hoje = `${ano}-${mes}-${dia}`;
+            if (inputData) inputData.value = hoje;
+            
+            if (inputData) {
+                inputData.addEventListener('input', calcularDatasDerivadas);
+                inputData.addEventListener('change', calcularDatasDerivadas);
+            }
+            
+            const editData = document.getElementById('edit-data');
+            if (editData) {
+                editData.addEventListener('input', calcularDatasDerivadasEdicao);
+                editData.addEventListener('change', calcularDatasDerivadasEdicao);
+            }
+            
+            const reuniaoData = document.getElementById('reuniao-data');
+            if (reuniaoData) reuniaoData.value = hoje;
+
+            const user = obterUsuarioLogado();
+            const session = obterSessaoAuth();
+
+            if (user && session && session.access_token) {
+                fecharTelaLogin();
+                aplicarPermissoesRBAC(user);
+                inicializarDadosUsuarioLogado();
+            } else {
+                abrirTelaLogin();
+            }
         });
 
         async function carregarTarefas() {
@@ -6175,7 +7157,11 @@
                     const formData = new FormData();
                     formData.append('audio', audioBlob, 'audio.webm');
 
-                    // Extrai assuntos únicos do cache local para enviar para a IA
+                    const user = obterUsuarioLogado();
+                    if (user && user.id) {
+                        formData.append('userId', user.id);
+                    }
+
                     if (typeof todasAtividades !== 'undefined' && todasAtividades.length > 0) {
                         const assuntos = [...new Set(todasAtividades.map(a => a.assuntoInterno).filter(a => a && a.trim() !== 'Sem Assunto' && a.trim() !== ''))];
                         if (assuntos.length > 0) {
@@ -6192,6 +7178,14 @@
                             body: formData
                         });
                         const data = await res.json();
+
+                        if (!res.ok || data.error) {
+                            const erroMsg = data.error || 'Erro ao processar o áudio com IA.';
+                            statusTranscricao.textContent = erroMsg;
+                            statusTranscricao.style.color = "var(--danger)";
+                            mostrarToast(erroMsg, 'error');
+                            return;
+                        }
 
                         if (data.projeto_oficial) {
                             document.getElementById('projeto').value = data.projeto_oficial;
@@ -6214,10 +7208,12 @@
 
                         statusTranscricao.textContent = "Áudio processado com sucesso!";
                         statusTranscricao.style.color = "var(--success)";
+                        mostrarToast('Atividade preenchida via áudio!', 'success');
                         setTimeout(() => statusTranscricao.textContent = "", 3000);
                     } catch (err) {
                         statusTranscricao.textContent = "Erro ao processar o áudio com IA.";
                         statusTranscricao.style.color = "var(--danger)";
+                        mostrarToast('Erro de comunicação com o servidor de IA.', 'error');
                         console.error(err);
                     }
                 };
@@ -7302,6 +8298,10 @@
                         const audioBlob = new Blob(kanbanAudioChunks, { type: 'audio/webm' });
                         const formData = new FormData();
                         formData.append('audio', audioBlob, 'kanban_audio.webm');
+                        const user = obterUsuarioLogado();
+                        if (user && user.id) {
+                            formData.append('userId', user.id);
+                        }
                         const assuntos = obterAssuntosSemana();
                         if (assuntos.length > 0) {
                             formData.append('assuntosCache', JSON.stringify(assuntos));
