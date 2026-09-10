@@ -6,7 +6,31 @@ import fs from 'fs';
 import path from 'path';
 import cors from 'cors';
 import { supabase, supabaseAdmin } from './supabaseClient.js';
-import { verificarAdmin } from './middleware/verificarAdmin.js';
+async function verificarAdmin(req, res, next) {
+  const userId = req.headers['x-user-id'] || req.headers['user-id'];
+
+  if (!userId) {
+    return res.status(403).json({ error: 'Acesso negado: ID de usuário não fornecido.' });
+  }
+
+  try {
+    const { data: usuario, error } = await supabaseAdmin
+      .from('usuarios')
+      .select('id, is_admin')
+      .eq('id', userId)
+      .single();
+
+    if (error || !usuario || !usuario.is_admin) {
+      return res.status(403).json({ error: 'Acesso negado: Requer privilégios de Administrador.' });
+    }
+
+    req.usuarioAdmin = usuario;
+    next();
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: 'Erro interno na verificação de permissões.' });
+  }
+}
 
 const app = express();
 const port = 5555;
@@ -552,42 +576,36 @@ app.post('/api/transcrever', upload.single('audio'), async (req, res) => {
     const opcoes = await carregarOpcoes();
     const { projetosStr, assuntosStr, classificacoesStr } = formatarListasParaPrompt(opcoes);
 
-    const systemPrompt = `Você é um assistente especialista em extração e estruturação de dados de logs de trabalho técnico.
-Vou te enviar a transcrição de um áudio onde relato as atividades que realizei.
+    const systemPrompt = `Você é um assistente executivo de alta senioridade, especializado em registrar atividades corporativas e de engenharia/produto com linguagem formal, concisa e altamente profissional.
+Receberás a transcrição falada de um relato de atividade de um profissional. Transcrições de voz frequentemente contêm correções espontâneas ("ou melhor", "digo"), hesitações, gírias e linguagem informal ("a gente", "né").
 
-Sua tarefa é interpretar o texto e retornar APENAS um objeto JSON válido com a seguinte estrutura:
+Sua obrigação é filtrar esses vícios e transformar o relato em um registro técnico e executivo impecável.
+
+Retorne EXCLUSIVAMENTE um objeto JSON válido com os seguintes campos:
 
 {
-  "projeto_oficial": "SELECIONE OBRIGATORIAMENTE um projeto corporativo da lista abaixo. Se não mencionado, deixe vazio.",
-  "assunto_interno": "SELECIONE OBRIGATORIAMENTE um 'Assunto Interno' da 'Lista de assuntos internos válidos' no final deste prompt. Não invente assuntos novos, selecione o mais correspondente da lista.",
-  "titulo": "Crie um título original, curto e executivo (máximo 6 palavras) que resuma o núcleo da atividade. NÃO apenas corte o início da transcrição.",
-  "descricao": "Crie um resumo executivo claro, direto e organizado em terceira pessoa do que foi realizado. Mantenha os detalhes técnicos essenciais, mas NÃO inclua a transcrição literal do áudio. Foque na ação e no resultado.",
-  "tempo": "Extraia o tempo gasto no formato HH:MM:SS (use 01:00:00 se não for mencionado)",
-  "classNivel1": "SELECIONE OBRIGATORIAMENTE uma 'Classificação nível 1' a partir da lista fornecida abaixo.",
-  "classNivel2": "SELECIONE OBRIGATORIAMENTE uma 'Classificação nível 2' que corresponda à 'Classificação nível 1' escolhida, baseando-se EXATAMENTE nas combinações da lista abaixo."
+  "projeto_oficial": "Identifique e selecione o projeto EXATO da 'Lista de Projetos Válidos'. Se o usuário mencionar 'projeto interno' ou 'interno', mapeie para 'Interno'.",
+  "assunto_interno": "Identifique e selecione o assunto interno EXATO da 'Lista de Assuntos Internos Válidos'. Ex: se o usuário falar 'agente de aplicação', selecione 'Agente de Aplicações'. Se falar 'reunião com fulano', selecione o assunto correspondente.",
+  "titulo": "Crie um título executivo de alto nível, sintético e profissional (3 a 6 palavras) que resuma o núcleo da atividade. NUNCA use palavras truncadas e NUNCA copie o início da transcrição.",
+  "descricao": "Redija um resumo formal, objetivo e detalhado em terceira pessoa (voz passiva executiva, ex: 'Realizada reunião...', 'Alinhamento com...', 'Desenvolvido...'). Elimine vícios de fala, redundâncias e informalidades. Destaque com clareza o objetivo, as deliberações técnicas e os desdobramentos práticos.",
+  "tempo": "Extraia o tempo final mencionado no formato HH:MM:SS. Ex: se mencionou '20 minutos, 25 minutos', adote 00:25:00. Padrão: 01:00:00 se não especificado.",
+  "classNivel1": "Selecione o Nível 1 da combinação mais aderente da lista.",
+  "classNivel2": "Selecione o Nível 2 correspondente ao Nível 1 escolhido da lista."
 }
 
-Lista de projetos válidos (retorne exatamente como escrito aqui):
+Lista de Projetos Válidos:
 ${projetosStr}
 
-Lista de assuntos internos válidos (retorne exatamente como escrito aqui):
+Lista de Assuntos Internos Válidos:
 ${assuntosStr}
 
-Lista de combinações válidas de Classificação nível 1 / Classificação nível 2 (escolha exatamente um par desta lista):
+Lista de Combinações de Classificação (Nível 1 / Nível 2):
 ${classificacoesStr}
 
-Exemplo de resposta esperada:
-{
-  "projeto_oficial": "Projetos - Rede Pró",
-  "assunto_interno": "Integração API",
-  "titulo": "Desenvolvimento da Integração API",
-  "descricao": "Foi realizado o desenvolvimento e teste da integração da API de produtos, corrigindo os erros de autenticação identificados na versão anterior. O sistema agora sincroniza os SKUs corretamente.",
-  "tempo": "02:30:00",
-  "classNivel1": "Infraestrutura",
-  "classNivel2": "Consultoria"
-}
-
-Retorne APENAS o JSON, sem formatação markdown ou textos adicionais.`;
+Diretrizes Críticas:
+1. Jamais devolva a transcrição crua na descrição.
+2. Jamais trunque frases no título.
+3. O JSON deve ser 100% puro e parseável.`;
 
     const completions = await chamarModeloComFallback({
       messages: [
@@ -597,11 +615,12 @@ Retorne APENAS o JSON, sem formatação markdown ou textos adicionais.`;
         },
         {
           role: 'user',
-          content: `Texto a ser analisado:\n"${textoCompleto}"`,
+          content: `Relato transcrito:\n"${textoCompleto}"`,
         },
       ],
-      temperature: 0.2,
+      temperature: 0.1,
       max_tokens: 1500,
+      response_format: { type: 'json_object' }
     }, openAiConfig.openai, openAiConfig.modelos);
 
     let respostaTexto = completions.choices[0].message.content.trim();
@@ -621,16 +640,29 @@ Retorne APENAS o JSON, sem formatação markdown ou textos adicionais.`;
       const firstBrace = respostaTexto.indexOf('{');
       const lastBrace = respostaTexto.lastIndexOf('}');
       if (firstBrace !== -1 && lastBrace > firstBrace) {
-        jsonResult = JSON.parse(respostaTexto.substring(firstBrace, lastBrace + 1));
-      } else {
+        try {
+          jsonResult = JSON.parse(respostaTexto.substring(firstBrace, lastBrace + 1));
+        } catch (innerErr) {
+          jsonResult = null;
+        }
+      }
+      if (!jsonResult) {
+        const matchTitulo = respostaTexto.match(/"titulo"\s*:\s*"([^"]+)"/i);
+        const matchDesc = respostaTexto.match(/"descricao"\s*:\s*"([^"]+)"/i);
+        const matchProj = respostaTexto.match(/"projeto_oficial"\s*:\s*"([^"]+)"/i);
+        const matchAssunto = respostaTexto.match(/"assunto_interno"\s*:\s*"([^"]+)"/i);
+        const matchTempo = respostaTexto.match(/"tempo"\s*:\s*"([^"]+)"/i);
+        const matchC1 = respostaTexto.match(/"classNivel1"\s*:\s*"([^"]+)"/i);
+        const matchC2 = respostaTexto.match(/"classNivel2"\s*:\s*"([^"]+)"/i);
+
         jsonResult = {
-          projeto_oficial: '',
-          assunto_interno: '',
-          titulo: textoCompleto.substring(0, 60),
-          descricao: textoCompleto,
-          tempo: '01:00:00',
-          classNivel1: '',
-          classNivel2: ''
+          projeto_oficial: matchProj ? matchProj[1] : 'Interno',
+          assunto_interno: matchAssunto ? matchAssunto[1] : '',
+          titulo: matchTitulo ? matchTitulo[1] : 'Registro de Atividade',
+          descricao: matchDesc ? matchDesc[1] : 'Atividade realizada conforme alinhamento.',
+          tempo: matchTempo ? matchTempo[1] : '01:00:00',
+          classNivel1: matchC1 ? matchC1[1] : '',
+          classNivel2: matchC2 ? matchC2[1] : ''
         };
       }
     }
@@ -997,8 +1029,9 @@ Retorne APENAS o JSON, sem formatação markdown ou textos adicionais.`;
           { role: 'system', content: systemPrompt },
           { role: 'user', content: `Texto transcrito:\n"${textoCompleto}"` },
         ],
-        temperature: 0.2,
+        temperature: 0.1,
         max_tokens: 2000,
+        response_format: { type: 'json_object' }
       }, openAiConfig.openai, openAiConfig.modelos);
 
       let respostaTexto = completions.choices[0].message.content.trim();
@@ -1030,8 +1063,8 @@ Retorne APENAS o JSON, sem formatação markdown ou textos adicionais.`;
     if (!jsonResult || !Array.isArray(jsonResult.tarefas) || jsonResult.tarefas.length === 0) {
       jsonResult = {
         tarefas: [{
-          titulo: textoCompleto.length > 60 ? textoCompleto.substring(0, 57) + '...' : textoCompleto,
-          descricao: textoCompleto,
+          titulo: 'Nova Tarefa Registrada',
+          descricao: 'Demanda capturada via áudio para detalhamento e execução.',
           projeto: 'Interno',
           assunto_interno: '',
           classNivel1: '',

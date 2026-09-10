@@ -4625,7 +4625,12 @@
                     body: JSON.stringify({ email, password })
                 });
 
-                const data = await res.json();
+                let data = null;
+                try {
+                    data = await res.json();
+                } catch (jsonErr) {
+                    throw new Error(`Erro de comunicação com o servidor (${res.status}). Verifique se a rota da API está ativa.`);
+                }
 
                 if (!res.ok || data.error) {
                     throw new Error(data.error || 'Credenciais inválidas.');
