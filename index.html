@@ -3624,11 +3624,11 @@
                         <div class="formal-sheet" id="formal-sheet">
                             <div class="formal-header">
                                 <div class="formal-header-left">
-                                    <img src="wma_logo.svg" alt="WMA Automations & AI" class="formal-logo-img">
+                                    <img src="wma_logo.svg" alt="Logo" class="formal-logo-img" id="formal-logo-img">
                                     <div class="formal-company-info">
-                                        <div class="formal-company-name">WMA Automations & AI</div>
-                                        <div class="formal-company-desc">Automações de Processos & Inteligência Artificial</div>
-                                        <div class="formal-company-meta">contato@wmaautomations.ai • Relatório de Prestação de Serviços</div>
+                                        <div class="formal-company-name" id="formal-company-name">WMA Automations & AI</div>
+                                        <div class="formal-company-desc" id="formal-company-desc">Automações de Processos & Inteligência Artificial</div>
+                                        <div class="formal-company-meta" id="formal-company-meta">contato@wmaautomations.ai • Relatório de Prestação de Serviços</div>
                                     </div>
                                 </div>
                                 <div class="formal-header-right">
@@ -3730,7 +3730,7 @@
                                 <div class="formal-signatures-grid">
                                     <div class="formal-sig-line">
                                         <div class="formal-sig-rule"></div>
-                                        <div class="formal-sig-name">WMA Automations & AI</div>
+                                        <div class="formal-sig-name" id="formal-sig-provider-name">WMA Automations & AI</div>
                                         <div class="formal-sig-role">Prestador de Serviços Técnicos</div>
                                     </div>
                                     <div class="formal-sig-line">
@@ -4002,7 +4002,8 @@
                         <div id="lista-classificacoes-container" style="display: flex; flex-direction: column; gap: 1rem;"></div>
                     </div>
                 </div>
-                <div id="setup-tab" class="tab-content">
+            </div>
+            <div id="setup-tab" class="tab-content">
                     <div class="home-welcome" style="margin-bottom: 1.5rem;">
                         <div class="home-welcome-text">
                             <h2>Configurações Pessoais de IA</h2>
@@ -4023,18 +4024,18 @@
                     <div class="card" style="max-width: 650px;">
                         <h3 class="card-title" style="margin-bottom: 1.25rem;">
                             <span><svg class="app-icon" viewBox="0 0 24 24"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg></span>
-                            Atualizar Minhas Chaves
+                            Atualizar Minhas Chaves & Identidade Visual
                         </h3>
                         <form id="form-setup-usuario" onsubmit="salvarSetupUsuario(event)">
                             <div class="form-group" style="margin-bottom: 1.25rem;">
                                 <label for="setup-openai-key" style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.4rem;">Chave da API da OpenAI (sk-...)</label>
                                 <div style="display: flex; gap: 0.5rem;">
-                                    <input type="password" id="setup-openai-key" placeholder="sk-proj-..." required style="flex: 1; padding: 0.75rem 1rem; border-radius: 10px; border: 1px solid var(--border); font-family: monospace; font-size: 0.9rem;">
+                                    <input type="password" id="setup-openai-key" placeholder="sk-proj-... (deixe vazio para manter a atual)" style="flex: 1; padding: 0.75rem 1rem; border-radius: 10px; border: 1px solid var(--border); font-family: monospace; font-size: 0.9rem;">
                                     <button type="button" class="btn btn-secondary" onclick="alternarVisibilidadeChave()" style="width: auto; padding: 0 1rem;" title="Mostrar / Ocultar">
                                         <svg class="app-icon" id="setup-eye-icon" viewBox="0 0 24 24"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
                                     </button>
                                 </div>
-                                <small style="display: block; color: var(--text-muted); margin-top: 0.4rem; font-size: 0.78rem;">Sua chave é armazenada de forma segura no Supabase.</small>
+                                <small style="display: block; color: var(--text-muted); margin-top: 0.4rem; font-size: 0.78rem;">Sua chave é armazenada de forma isolada e segura no Supabase.</small>
                             </div>
 
                             <div class="form-group" style="margin-bottom: 1.5rem;">
@@ -4044,6 +4045,38 @@
                                     <option value="gpt-4o">GPT-4o (Completo / Alta capacidade)</option>
                                     <option value="gpt-5-nano">GPT-5 Nano (Ultra veloz)</option>
                                 </select>
+                            </div>
+
+                            <hr style="border: 0; border-top: 1px solid var(--border); margin: 1.5rem 0;">
+
+                            <h4 style="font-size: 1rem; font-weight: 700; margin-bottom: 1rem; color: var(--text); display: flex; align-items: center; gap: 0.5rem;">
+                                <svg class="app-icon" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                                Identidade Visual para PDF & Relatórios Formais
+                            </h4>
+
+                            <div class="form-group" style="margin-bottom: 1.25rem;">
+                                <label for="setup-empresa-pdf" style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.4rem;">Nome da Sua Empresa / Marca</label>
+                                <input type="text" id="setup-empresa-pdf" placeholder="Ex: WMA Automations & AI" style="width: 100%; padding: 0.75rem 1rem; border-radius: 10px; border: 1px solid var(--border); font-size: 0.9rem;">
+                            </div>
+
+                            <div class="form-group" style="margin-bottom: 1.25rem;">
+                                <label for="setup-nome-pdf" style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.4rem;">Nome do Responsável / Prestador de Serviço</label>
+                                <input type="text" id="setup-nome-pdf" placeholder="Ex: Wlaisson Alcantara" style="width: 100%; padding: 0.75rem 1rem; border-radius: 10px; border: 1px solid var(--border); font-size: 0.9rem;">
+                            </div>
+
+                            <div class="form-group" style="margin-bottom: 1.25rem;">
+                                <label for="setup-descricao-pdf" style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.4rem;">Descrição da Atividade / Slogan</label>
+                                <input type="text" id="setup-descricao-pdf" placeholder="Ex: Automações de Processos & Inteligência Artificial" style="width: 100%; padding: 0.75rem 1rem; border-radius: 10px; border: 1px solid var(--border); font-size: 0.9rem;">
+                            </div>
+
+                            <div class="form-group" style="margin-bottom: 1.25rem;">
+                                <label for="setup-contato-pdf" style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.4rem;">Contato / E-mail do Cabeçalho</label>
+                                <input type="text" id="setup-contato-pdf" placeholder="Ex: contato@minhaempresa.com" style="width: 100%; padding: 0.75rem 1rem; border-radius: 10px; border: 1px solid var(--border); font-size: 0.9rem;">
+                            </div>
+
+                            <div class="form-group" style="margin-bottom: 1.5rem;">
+                                <label for="setup-logo-url" style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.4rem;">URL do Logotipo (PNG/SVG)</label>
+                                <input type="url" id="setup-logo-url" placeholder="https://exemplo.com/logo.png (ou deixe vazio para padrão)" style="width: 100%; padding: 0.75rem 1rem; border-radius: 10px; border: 1px solid var(--border); font-size: 0.9rem;">
                             </div>
 
                             <button type="submit" class="btn btn-primary" id="btn-salvar-setup" style="width: auto; padding: 0.8rem 1.75rem;">
@@ -4099,7 +4132,6 @@
                         </div>
                     </div>
                 </div>
-            </div>
         </main>
     </div>
 </div>
@@ -4719,6 +4751,34 @@
             input.type = input.type === 'password' ? 'text' : 'password';
         }
 
+        let configUsuarioAtual = null;
+
+        function aplicarIdentidadeVisualPdf(config) {
+            if (!config) return;
+            const logoImg = document.getElementById('formal-logo-img');
+            const compName = document.getElementById('formal-company-name');
+            const compDesc = document.getElementById('formal-company-desc');
+            const compMeta = document.getElementById('formal-company-meta');
+            const sigName = document.getElementById('formal-sig-provider-name');
+
+            if (config.logo_url && logoImg) {
+                logoImg.src = config.logo_url;
+            }
+            if (config.empresa_pdf && compName) {
+                compName.textContent = config.empresa_pdf;
+            }
+            if (config.descricao_pdf && compDesc) {
+                compDesc.textContent = config.descricao_pdf;
+            }
+            if (compMeta) {
+                const contato = config.contato_pdf || 'contato@wmaautomations.ai';
+                compMeta.textContent = `${contato} • Relatório de Prestação de Serviços`;
+            }
+            if (sigName) {
+                sigName.textContent = config.nome_pdf || config.empresa_pdf || 'WMA Automations & AI';
+            }
+        }
+
         async function carregarSetupUsuario() {
             const user = obterUsuarioLogado();
             if (!user) return;
@@ -4726,26 +4786,42 @@
             const badgeEl = document.getElementById('setup-status-badge');
             const keyInput = document.getElementById('setup-openai-key');
             const modelSelect = document.getElementById('setup-openai-model');
+            const empresaInput = document.getElementById('setup-empresa-pdf');
+            const nomeInput = document.getElementById('setup-nome-pdf');
+            const descInput = document.getElementById('setup-descricao-pdf');
+            const contatoInput = document.getElementById('setup-contato-pdf');
+            const logoInput = document.getElementById('setup-logo-url');
 
             try {
                 const res = await fetch(`/api/setup/${user.id}`);
                 const data = await res.json();
 
-                if (data.status === 'success' && data.configured) {
-                    if (descEl) descEl.textContent = `Chave ativa: ${data.apiKeyMasked}`;
-                    if (badgeEl) {
-                        badgeEl.className = 'setup-status-badge setup-badge-ok';
-                        badgeEl.textContent = 'Conectada';
+                if (data.status === 'success') {
+                    configUsuarioAtual = data;
+                    if (data.configured) {
+                        if (descEl) descEl.textContent = `Chave ativa: ${data.apiKeyMasked}`;
+                        if (badgeEl) {
+                            badgeEl.className = 'setup-status-badge setup-badge-ok';
+                            badgeEl.textContent = 'Conectada';
+                        }
+                    } else {
+                        if (descEl) descEl.textContent = 'Nenhuma chave configurada. Insira sua chave da OpenAI abaixo.';
+                        if (badgeEl) {
+                            badgeEl.className = 'setup-status-badge setup-badge-pending';
+                            badgeEl.textContent = 'Pendente';
+                        }
                     }
+
                     if (modelSelect && data.openai_model) {
                         modelSelect.value = data.openai_model;
                     }
-                } else {
-                    if (descEl) descEl.textContent = 'Nenhuma chave configurada. Insira sua chave da OpenAI abaixo.';
-                    if (badgeEl) {
-                        badgeEl.className = 'setup-status-badge setup-badge-pending';
-                        badgeEl.textContent = 'Pendente';
-                    }
+                    if (empresaInput && data.empresa_pdf) empresaInput.value = data.empresa_pdf;
+                    if (nomeInput && data.nome_pdf) nomeInput.value = data.nome_pdf;
+                    if (descInput && data.descricao_pdf) descInput.value = data.descricao_pdf;
+                    if (contatoInput && data.contato_pdf) contatoInput.value = data.contato_pdf;
+                    if (logoInput && data.logo_url) logoInput.value = data.logo_url;
+
+                    aplicarIdentidadeVisualPdf(data);
                 }
             } catch (err) {
                 if (descEl) descEl.textContent = 'Erro ao consultar status no banco.';
@@ -4759,15 +4835,20 @@
 
             const keyInput = document.getElementById('setup-openai-key');
             const modelSelect = document.getElementById('setup-openai-model');
+            const empresaInput = document.getElementById('setup-empresa-pdf');
+            const nomeInput = document.getElementById('setup-nome-pdf');
+            const descInput = document.getElementById('setup-descricao-pdf');
+            const contatoInput = document.getElementById('setup-contato-pdf');
+            const logoInput = document.getElementById('setup-logo-url');
             const btnSalvar = document.getElementById('btn-salvar-setup');
 
             const openai_api_key = keyInput ? keyInput.value.trim() : '';
             const openai_model = modelSelect ? modelSelect.value : 'gpt-4o-mini';
-
-            if (!openai_api_key) {
-                mostrarToast('Por favor, informe uma chave válida.', 'warning');
-                return;
-            }
+            const empresa_pdf = empresaInput ? empresaInput.value.trim() : '';
+            const nome_pdf = nomeInput ? nomeInput.value.trim() : '';
+            const descricao_pdf = descInput ? descInput.value.trim() : '';
+            const contato_pdf = contatoInput ? contatoInput.value.trim() : '';
+            const logo_url = logoInput ? logoInput.value.trim() : '';
 
             if (btnSalvar) {
                 btnSalvar.disabled = true;
@@ -4781,18 +4862,23 @@
                     body: JSON.stringify({
                         userId: user.id,
                         openai_api_key,
-                        openai_model
+                        openai_model,
+                        empresa_pdf,
+                        nome_pdf,
+                        descricao_pdf,
+                        contato_pdf,
+                        logo_url
                     })
                 });
                 const data = await res.json();
 
                 if (!res.ok || data.error) {
-                    throw new Error(data.error || 'Erro ao salvar chave.');
+                    throw new Error(data.error || 'Erro ao salvar configurações.');
                 }
 
-                mostrarToast('Configurações de IA salvas com sucesso!', 'success');
+                mostrarToast('Configurações salvas com sucesso no Supabase!', 'success');
                 if (keyInput) keyInput.value = '';
-                carregarSetupUsuario();
+                await carregarSetupUsuario();
             } catch (err) {
                 mostrarToast(err.message, 'error');
             } finally {
@@ -6013,17 +6099,17 @@
             } else if (tabId === 'semana-tab') {
                 carregarDadosPlanilha();
             } else if (tabId === 'gerenciar-tab') {
-                renderizarPainelGerenciar();
+                carregarOpcoesSistema();
             } else if (tabId === 'registro-tab') {
                 popularTodosSelects();
             } else if (tabId === 'tarefas-tab') {
                 carregarTarefas();
             } else if (tabId === 'kanban-tab') {
                 carregarKanban();
-            } else if (tabId === 'setup-tab') {
+            } else if (tabId === 'setup-tab' || tabId === 'relatorios-tab') {
                 carregarSetupUsuario();
             } else if (tabId === 'usuarios-admin-tab') {
-                carregarListaUsuariosAdmin();
+                carregarListaUsuariosAdmin(true);
             }
         }
 
@@ -6493,6 +6579,7 @@
             carregarKanban();
             carregarCampanhas();
             carregarOpcoesSistema();
+            carregarSetupUsuario();
             carregarDadosPlanilha().then(() => {
                 atualizarHomeDashboard();
             });
@@ -6744,75 +6831,80 @@
         }
 
         async function carregarDadosPlanilha() {
-            if (WEBHOOK_URL.includes('SUA_URL_DO_WEBHOOK')) return;
-            
             const tbody = document.getElementById('tabela-atividades-semana');
-            
-            tbody.innerHTML = `
-                <tr class="skeleton-row">
-                    <td><div class="skeleton-line short"></div></td>
-                    <td><div class="skeleton-line"></div></td>
-                    <td><div class="skeleton-line medium"></div></td>
-                    <td><div class="skeleton-line short"></div></td>
-                    <td><div class="skeleton-line medium"></div></td>
-                    <td><div class="skeleton-line"></div></td>
-                    <td><div class="skeleton-line short"></div></td>
-                    <td><div class="skeleton-line short"></div></td>
-                    <td><div class="skeleton-line short"></div></td>
-                </tr>
-                <tr class="skeleton-row">
-                    <td><div class="skeleton-line short"></div></td>
-                    <td><div class="skeleton-line medium"></div></td>
-                    <td><div class="skeleton-line"></div></td>
-                    <td><div class="skeleton-line short"></div></td>
-                    <td><div class="skeleton-line medium"></div></td>
-                    <td><div class="skeleton-line"></div></td>
-                    <td><div class="skeleton-line short"></div></td>
-                    <td><div class="skeleton-line short"></div></td>
-                    <td><div class="skeleton-line short"></div></td>
-                </tr>
-                <tr class="skeleton-row">
-                    <td><div class="skeleton-line short"></div></td>
-                    <td><div class="skeleton-line"></div></td>
-                    <td><div class="skeleton-line medium"></div></td>
-                    <td><div class="skeleton-line short"></div></td>
-                    <td><div class="skeleton-line"></div></td>
-                    <td><div class="skeleton-line medium"></div></td>
-                    <td><div class="skeleton-line short"></div></td>
-                    <td><div class="skeleton-line short"></div></td>
-                    <td><div class="skeleton-line short"></div></td>
-                </tr>
-            `;
+            if (tbody) {
+                tbody.innerHTML = `
+                    <tr class="skeleton-row">
+                        <td><div class="skeleton-line short"></div></td>
+                        <td><div class="skeleton-line"></div></td>
+                        <td><div class="skeleton-line medium"></div></td>
+                        <td><div class="skeleton-line short"></div></td>
+                        <td><div class="skeleton-line medium"></div></td>
+                        <td><div class="skeleton-line"></div></td>
+                        <td><div class="skeleton-line short"></div></td>
+                        <td><div class="skeleton-line short"></div></td>
+                        <td><div class="skeleton-line short"></div></td>
+                    </tr>
+                    <tr class="skeleton-row">
+                        <td><div class="skeleton-line short"></div></td>
+                        <td><div class="skeleton-line medium"></div></td>
+                        <td><div class="skeleton-line"></div></td>
+                        <td><div class="skeleton-line short"></div></td>
+                        <td><div class="skeleton-line medium"></div></td>
+                        <td><div class="skeleton-line"></div></td>
+                        <td><div class="skeleton-line short"></div></td>
+                        <td><div class="skeleton-line short"></div></td>
+                        <td><div class="skeleton-line short"></div></td>
+                    </tr>
+                `;
+            }
 
-            try {
-                const res = await fetch(`${WEBHOOK_URL}?action=list`);
-                const result = await res.json();
-                
-                if (result.status === 'success') {
-                    todasAtividades = result.data;
-                    renderizarAtividadesSemana();
-                    atualizarDatalistAssuntos();
-                } else {
-                    todasAtividades = [];
-                    renderizarAtividadesSemana();
-                    tbody.innerHTML = `
-                        <tr>
-                            <td colspan="9" class="empty-state">
-                                <div class="empty-state-icon">${getAppSvgIcon('inbox', 'app-icon-xl')}</div>
-                                Nenhuma atividade encontrada.
-                            </td>
-                        </tr>
-                    `;
+            const user = typeof obterUsuarioLogado === 'function' ? obterUsuarioLogado() : null;
+            let carregadoDoBanco = false;
+
+            if (user && user.id) {
+                try {
+                    const resDb = await fetch('/api/atividades', {
+                        headers: { 'x-user-id': user.id }
+                    });
+                    if (resDb.ok) {
+                        const resultDb = await resDb.json();
+                        if (resultDb && resultDb.status === 'success' && Array.isArray(resultDb.data) && resultDb.data.length > 0) {
+                            todasAtividades = resultDb.data;
+                            renderizarAtividadesSemana();
+                            atualizarDatalistAssuntos();
+                            carregadoDoBanco = true;
+                            return;
+                        }
+                    }
+                } catch (eDb) {
+                    console.warn(eDb);
                 }
-            } catch (err) {
-                console.error(err);
-                todasAtividades = [];
-                renderizarAtividadesSemana();
+            }
+
+            if (!carregadoDoBanco && !WEBHOOK_URL.includes('SUA_URL_DO_WEBHOOK')) {
+                try {
+                    const res = await fetch(`${WEBHOOK_URL}?action=list`);
+                    const result = await res.json();
+                    if (result && result.status === 'success' && Array.isArray(result.data)) {
+                        todasAtividades = result.data;
+                        renderizarAtividadesSemana();
+                        atualizarDatalistAssuntos();
+                        return;
+                    }
+                } catch (eSheet) {
+                    console.warn(eSheet);
+                }
+            }
+
+            todasAtividades = [];
+            renderizarAtividadesSemana();
+            if (tbody) {
                 tbody.innerHTML = `
                     <tr>
-                        <td colspan="9" class="empty-state" style="color: var(--danger);">
-                            <div class="empty-state-icon">${getAppSvgIcon('alertTriangle', 'app-icon-xl')}</div>
-                            Erro ao conectar com o Google Sheets.
+                        <td colspan="9" class="empty-state">
+                            <div class="empty-state-icon">${getAppSvgIcon('inbox', 'app-icon-xl')}</div>
+                            Nenhuma atividade encontrada.
                         </td>
                     </tr>
                 `;
@@ -7276,29 +7368,50 @@
             btnSubmit.disabled = true;
 
             try {
-                if (WEBHOOK_URL.includes('SUA_URL_DO_WEBHOOK')) {
-                    mostrarToast('Por favor, configure a URL do seu Webhook do Google Apps Script.', 'warning');
-                    btnSubmit.classList.remove('btn-loading');
-                    btnSubmit.innerHTML = originalText;
-                    btnSubmit.disabled = false;
-                    return;
+                const user = typeof obterUsuarioLogado === 'function' ? obterUsuarioLogado() : null;
+                let salvo = false;
+
+                if (user && user.id) {
+                    data.userId = user.id;
+                    try {
+                        const resDb = await fetch('/api/atividades', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'x-user-id': user.id
+                            },
+                            body: JSON.stringify(data)
+                        });
+                        const dataDb = await resDb.json();
+                        if (resDb.ok && dataDb.status === 'success') {
+                            salvo = true;
+                        }
+                    } catch (eDb) {
+                        console.warn(eDb);
+                    }
                 }
 
-                await fetch(WEBHOOK_URL, {
-                    method: 'POST',
-                    body: JSON.stringify(data),
-                    mode: 'no-cors'
-                });
+                if (!salvo && !WEBHOOK_URL.includes('SUA_URL_DO_WEBHOOK')) {
+                    await fetch(WEBHOOK_URL, {
+                        method: 'POST',
+                        body: JSON.stringify(data),
+                        mode: 'no-cors'
+                    });
+                    salvo = true;
+                }
 
-                mostrarToast('Atividade registrada com sucesso!', 'success');
-
-                document.getElementById('assuntoInterno').value = '';
-                document.getElementById('titulo').value = '';
-                document.getElementById('atividade').value = '';
-                document.getElementById('tempo').value = '';
-                popularSelectsClassificacao('classNivel1', 'classNivel2');
-
-                await atualizarDashboard();
+                if (salvo) {
+                    mostrarToast('Atividade registrada com sucesso!', 'success');
+                    document.getElementById('assuntoInterno').value = '';
+                    document.getElementById('titulo').value = '';
+                    document.getElementById('atividade').value = '';
+                    document.getElementById('tempo').value = '';
+                    popularSelectsClassificacao('classNivel1', 'classNivel2');
+                    await carregarDadosPlanilha();
+                    await atualizarDashboard();
+                } else {
+                    mostrarToast('Erro ao salvar os dados da atividade.', 'error');
+                }
             } catch (err) {
                 mostrarToast('Erro ao salvar os dados.', 'error');
                 console.error(err);
@@ -7329,7 +7442,24 @@
             let listaAtividades = [];
 
             try {
-                if (!WEBHOOK_URL.includes('SUA_URL_DO_WEBHOOK')) {
+                const user = typeof obterUsuarioLogado === 'function' ? obterUsuarioLogado() : null;
+                if (user && user.id) {
+                    try {
+                        const resDb = await fetch(`/api/atividades?start=${inicio}&end=${fim}`, {
+                            headers: { 'x-user-id': user.id }
+                        });
+                        if (resDb.ok) {
+                            const dataDb = await resDb.json();
+                            if (dataDb && dataDb.status === 'success' && Array.isArray(dataDb.data)) {
+                                listaAtividades = dataDb.data;
+                            }
+                        }
+                    } catch (eDb) {
+                        console.warn(eDb);
+                    }
+                }
+
+                if (listaAtividades.length === 0 && !WEBHOOK_URL.includes('SUA_URL_DO_WEBHOOK')) {
                     try {
                         const res = await fetch(`${WEBHOOK_URL}?action=report&start=${inicio}&end=${fim}`);
                         const data = await res.json();
@@ -7477,6 +7607,7 @@
                 document.getElementById('formal-table-tbody').innerHTML = itemsHtml;
                 document.getElementById('formal-table-total-horas').textContent = totalFormatado;
 
+                aplicarIdentidadeVisualPdf(configUsuarioAtual);
                 relatorioDiv.style.display = 'block';
                 btnPdf.disabled = false;
                 mostrarToast('Relatório formal de horas apurado com sucesso!', 'success');
@@ -7540,10 +7671,14 @@
             `;
 
             try {
+                const user = typeof obterUsuarioLogado === 'function' ? obterUsuarioLogado() : null;
                 const res = await fetch('/api/gerar-relatorio', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ semana: semanaResumoTexto })
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-user-id': user ? user.id : ''
+                    },
+                    body: JSON.stringify({ semana: semanaResumoTexto, userId: user ? user.id : '' })
                 });
 
                 const data = await res.json();
@@ -7681,10 +7816,14 @@
             `;
 
             try {
+                const user = typeof obterUsuarioLogado === 'function' ? obterUsuarioLogado() : null;
                 const res = await fetch('/api/gerar-relatorio-reporter', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ semana: semanaReporterTexto })
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-user-id': user ? user.id : ''
+                    },
+                    body: JSON.stringify({ semana: semanaReporterTexto, userId: user ? user.id : '' })
                 });
 
                 const data = await res.json();

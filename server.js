@@ -162,14 +162,14 @@ const OPCOES_DEFAULT = {
       "Personalização de cadastro", "Correção de cadastro errado (Recebemos a informação correta e erramos na manipulação)",
       "Reunião com cliente", "Reunião sobre Atividade / Projeto", "Consultoria", "Suporte interno"
     ],
-    "Orçamento": [ "Orçamento" ],
-    "Reunião que não é sobre a atividade [Projeto deve ser interno]": [ "Reunião interna" ],
+    "Orçamento": ["Orçamento"],
+    "Reunião que não é sobre a atividade [Projeto deve ser interno]": ["Reunião interna"],
     "Gestão de pessoas": [
       "Contratação / Feedback / Estratégia do dpto e etc", "Grestão de equipe, tarefas e demandas"
     ],
-    "Scraping": [ "Scraping" ],
-    "Sugestão e/ou Curadoria de Mídias CdP": [ "Sugestão e/ou Curadoria de Mídias CdP" ],
-    "Automação": [ "Scraping", "Tratamento de Vista Explodida" ]
+    "Scraping": ["Scraping"],
+    "Sugestão e/ou Curadoria de Mídias CdP": ["Sugestão e/ou Curadoria de Mídias CdP"],
+    "Automação": ["Scraping", "Tratamento de Vista Explodida"]
   }
 };
 
@@ -489,23 +489,33 @@ app.get('/api/setup/:userId', async (req, res) => {
   try {
     const { data, error } = await supabaseAdmin
       .from('setup_usuario')
-      .select('openai_api_key, openai_model')
+      .select('openai_api_key, openai_model, nome_pdf, empresa_pdf, descricao_pdf, contato_pdf, logo_url')
       .eq('user_id', userId)
       .single();
 
-    if (error || !data || !data.openai_api_key) {
+    if (error || !data) {
       return res.json({
         status: 'success',
         configured: false,
-        openai_model: data?.openai_model || 'gpt-4o-mini'
+        openai_model: 'gpt-4o-mini',
+        nome_pdf: '',
+        empresa_pdf: '',
+        descricao_pdf: '',
+        contato_pdf: '',
+        logo_url: ''
       });
     }
 
     return res.json({
       status: 'success',
-      configured: true,
-      apiKeyMasked: `sk-...${data.openai_api_key.slice(-4)}`,
-      openai_model: data.openai_model || 'gpt-4o-mini'
+      configured: Boolean(data.openai_api_key),
+      apiKeyMasked: data.openai_api_key ? `sk-...${data.openai_api_key.slice(-4)}` : '',
+      openai_model: data.openai_model || 'gpt-4o-mini',
+      nome_pdf: data.nome_pdf || '',
+      empresa_pdf: data.empresa_pdf || '',
+      descricao_pdf: data.descricao_pdf || '',
+      contato_pdf: data.contato_pdf || '',
+      logo_url: data.logo_url || ''
     });
   } catch (err) {
     console.error(err);
@@ -514,35 +524,212 @@ app.get('/api/setup/:userId', async (req, res) => {
 });
 
 app.post('/api/setup', async (req, res) => {
-  const { userId, openai_api_key, openai_model } = req.body;
+  const { userId, openai_api_key, openai_model, nome_pdf, empresa_pdf, descricao_pdf, contato_pdf, logo_url } = req.body;
   const targetUserId = userId || req.headers['x-user-id'] || req.headers['user-id'];
 
   if (!targetUserId) {
     return res.status(400).json({ error: 'userId é obrigatório.' });
   }
 
-  if (!openai_api_key) {
-    return res.status(400).json({ error: 'openai_api_key é obrigatória.' });
-  }
-
   try {
+    const { data: existente } = await supabaseAdmin
+      .from('setup_usuario')
+      .select('*')
+      .eq('user_id', targetUserId)
+      .single();
+
+    const dadosAtualizar = {
+      user_id: targetUserId,
+      openai_api_key: openai_api_key && openai_api_key.trim() ? openai_api_key.trim() : (existente?.openai_api_key || null),
+      openai_model: openai_model || existente?.openai_model || 'gpt-4o-mini',
+      nome_pdf: nome_pdf !== undefined ? nome_pdf : (existente?.nome_pdf || ''),
+      empresa_pdf: empresa_pdf !== undefined ? empresa_pdf : (existente?.empresa_pdf || ''),
+      descricao_pdf: descricao_pdf !== undefined ? descricao_pdf : (existente?.descricao_pdf || ''),
+      contato_pdf: contato_pdf !== undefined ? contato_pdf : (existente?.contato_pdf || ''),
+      logo_url: logo_url !== undefined ? logo_url : (existente?.logo_url || ''),
+      updated_at: new Date().toISOString()
+    };
+
     const { error } = await supabaseAdmin
       .from('setup_usuario')
-      .upsert({
-        user_id: targetUserId,
-        openai_api_key: openai_api_key.trim(),
-        openai_model: openai_model || 'gpt-4o-mini',
-        updated_at: new Date().toISOString()
-      });
+      .upsert(dadosAtualizar);
 
     if (error) {
       return res.status(500).json({ error: error.message });
     }
 
-    return res.json({ status: 'success', message: 'Setup atualizado com sucesso.' });
+    return res.json({ status: 'success', message: 'Configurações salvas com sucesso.' });
   } catch (err) {
     console.error(err);
     return res.status(500).json({ error: 'Erro ao salvar setup do usuário.' });
+  }
+});
+
+app.get('/api/atividades', async (req, res) => {
+  const userId = req.headers['x-user-id'] || req.headers['user-id'] || req.query.userId;
+  if (!userId) {
+    return res.status(401).json({ error: 'Usuário não autenticado.' });
+  }
+
+  try {
+    let query = supabaseAdmin
+      .from('atividades')
+      .select('*')
+      .order('data', { ascending: false })
+      .order('created_at', { ascending: false });
+
+    if (req.query.todos !== 'true') {
+      query = query.eq('user_id', userId);
+    }
+
+    if (req.query.semana) {
+      query = query.eq('semana', req.query.semana);
+    }
+
+    if (req.query.start && req.query.end) {
+      query = query.gte('data', req.query.start).lte('data', req.query.end);
+    }
+
+    const { data, error } = await query;
+    if (error) {
+      return res.status(500).json({ error: error.message });
+    }
+
+    const formatadas = (data || []).map(item => ({
+      id: item.id,
+      data: item.data,
+      semana: item.semana,
+      projeto: item.projeto,
+      assuntoInterno: item.assunto_interno,
+      titulo: item.titulo,
+      atividade: item.atividade,
+      tempo: item.tempo,
+      classNivel1: item.class_nivel_1,
+      classNivel2: item.class_nivel_2,
+      userId: item.user_id
+    }));
+
+    return res.json({ status: 'success', data: formatadas });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: 'Erro ao listar atividades.' });
+  }
+});
+
+app.post('/api/atividades', async (req, res) => {
+  const userId = req.headers['x-user-id'] || req.headers['user-id'] || req.body.userId;
+  if (!userId) {
+    return res.status(401).json({ error: 'Usuário não autenticado.' });
+  }
+
+  const {
+    id, data, semana, projeto, assuntoInterno, assunto_interno,
+    titulo, atividade, descricao, tempo, classNivel1, class_nivel_1,
+    classNivel2, class_nivel_2
+  } = req.body;
+
+  const novoId = id || `ATV-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+  const registro = {
+    id: novoId,
+    user_id: userId,
+    data: data || new Date().toISOString().split('T')[0],
+    semana: semana || '',
+    projeto: projeto || '',
+    assunto_interno: assuntoInterno || assunto_interno || '',
+    titulo: titulo || '',
+    atividade: atividade || descricao || '',
+    tempo: tempo || '00:00:00',
+    class_nivel_1: classNivel1 || class_nivel_1 || '',
+    class_nivel_2: classNivel2 || class_nivel_2 || '',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  };
+
+  try {
+    const { error } = await supabaseAdmin
+      .from('atividades')
+      .upsert(registro);
+
+    if (error) {
+      return res.status(500).json({ error: error.message });
+    }
+
+    try {
+      fetch(WEBHOOK_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'add',
+          id: registro.id,
+          data: registro.data,
+          semana: registro.semana,
+          projeto: registro.projeto,
+          assuntoInterno: registro.assunto_interno,
+          titulo: registro.titulo,
+          atividade: registro.atividade,
+          tempo: registro.tempo,
+          classNivel1: registro.class_nivel_1,
+          classNivel2: registro.class_nivel_2
+        })
+      }).catch(e => console.log('Sheets fallback aviso:', e.message));
+    } catch (sheetErr) {
+      console.log('Sheets fallback aviso:', sheetErr.message);
+    }
+
+    return res.json({ status: 'success', data: registro });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: 'Erro ao registrar atividade.' });
+  }
+});
+
+app.put('/api/atividades/:id', async (req, res) => {
+  const userId = req.headers['x-user-id'] || req.headers['user-id'] || req.body.userId;
+  const { id } = req.params;
+  const { data, semana, projeto, assuntoInterno, assunto_interno, titulo, atividade, tempo, classNivel1, class_nivel_1, classNivel2, class_nivel_2 } = req.body;
+
+  try {
+    const dados = {
+      updated_at: new Date().toISOString()
+    };
+    if (data !== undefined) dados.data = data;
+    if (semana !== undefined) dados.semana = semana;
+    if (projeto !== undefined) dados.projeto = projeto;
+    if (assuntoInterno !== undefined || assunto_interno !== undefined) dados.assunto_interno = assuntoInterno || assunto_interno;
+    if (titulo !== undefined) dados.titulo = titulo;
+    if (atividade !== undefined) dados.atividade = atividade;
+    if (tempo !== undefined) dados.tempo = tempo;
+    if (classNivel1 !== undefined || class_nivel_1 !== undefined) dados.class_nivel_1 = classNivel1 || class_nivel_1;
+    if (classNivel2 !== undefined || class_nivel_2 !== undefined) dados.class_nivel_2 = classNivel2 || class_nivel_2;
+
+    let query = supabaseAdmin.from('atividades').update(dados).eq('id', id);
+    if (userId) query = query.eq('user_id', userId);
+
+    const { error } = await query;
+    if (error) return res.status(500).json({ error: error.message });
+
+    return res.json({ status: 'success' });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: 'Erro ao atualizar atividade.' });
+  }
+});
+
+app.delete('/api/atividades/:id', async (req, res) => {
+  const userId = req.headers['x-user-id'] || req.headers['user-id'] || req.query.userId;
+  const { id } = req.params;
+
+  try {
+    let query = supabaseAdmin.from('atividades').delete().eq('id', id);
+    if (userId) query = query.eq('user_id', userId);
+
+    const { error } = await query;
+    if (error) return res.status(500).json({ error: error.message });
+
+    return res.json({ status: 'success' });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: 'Erro ao excluir atividade.' });
   }
 });
 
@@ -1163,15 +1350,50 @@ app.post('/api/gerar-relatorio', async (req, res) => {
   }
 
   try {
-    const sheetRes = await fetch(`${WEBHOOK_URL}?action=semana-relatorio&semana=${encodeURIComponent(semana)}`);
-    const sheetData = await sheetRes.json();
+    let listaAtividades = [];
 
-    if (sheetData.status !== 'success' || !sheetData.atividades || sheetData.atividades.length === 0) {
+    try {
+      let query = supabaseAdmin
+        .from('atividades')
+        .select('*')
+        .eq('semana', semana);
+
+      if (userId) {
+        query = query.eq('user_id', userId);
+      }
+
+      const { data: atvsDb } = await query;
+      if (atvsDb && atvsDb.length > 0) {
+        listaAtividades = atvsDb.map(a => ({
+          titulo: a.titulo,
+          descricao: a.atividade,
+          assuntoInterno: a.assunto_interno,
+          projeto: a.projeto,
+          tempo: a.tempo
+        }));
+      }
+    } catch (eDb) {
+      console.log('Erro ao buscar do Supabase, tentando Sheets fallback:', eDb.message);
+    }
+
+    if (listaAtividades.length === 0) {
+      try {
+        const sheetRes = await fetch(`${WEBHOOK_URL}?action=semana-relatorio&semana=${encodeURIComponent(semana)}`);
+        const sheetData = await sheetRes.json();
+        if (sheetData && sheetData.status === 'success' && Array.isArray(sheetData.atividades)) {
+          listaAtividades = sheetData.atividades;
+        }
+      } catch (eSheet) {
+        console.log('Erro no fallback do Sheets:', eSheet.message);
+      }
+    }
+
+    if (listaAtividades.length === 0) {
       return res.json({ status: 'empty', resumo: [], message: 'Nenhuma atividade encontrada para esta semana.' });
     }
 
     const agrupado = {};
-    for (const atv of sheetData.atividades) {
+    for (const atv of listaAtividades) {
       const chave = atv.assuntoInterno || 'Sem Assunto';
       if (!agrupado[chave]) {
         agrupado[chave] = [];
@@ -1238,7 +1460,7 @@ CRÍTICO E MANDATÓRIO:
     try {
       // Pega o texto da resposta
       let jsonStr = respostaTexto.trim();
-      
+
       // Limpeza brutal de qualquer markdown residual
       if (jsonStr.startsWith('```json')) {
         jsonStr = jsonStr.replace(/^```json/i, '').replace(/```$/i, '').trim();
@@ -1252,7 +1474,7 @@ CRÍTICO E MANDATÓRIO:
       if (firstBrace !== -1 && lastBrace !== -1) {
         jsonStr = jsonStr.substring(firstBrace, lastBrace + 1);
       }
-      
+
       const parsed = JSON.parse(jsonStr);
       resumoArray = parsed.relatorio || parsed;
     } catch (e) {
@@ -1284,15 +1506,50 @@ app.post('/api/gerar-relatorio-reporter', async (req, res) => {
   }
 
   try {
-    const sheetRes = await fetch(`${WEBHOOK_URL}?action=semana-relatorio&semana=${encodeURIComponent(semana)}`);
-    const sheetData = await sheetRes.json();
+    let listaAtividades = [];
 
-    if (sheetData.status !== 'success' || !sheetData.atividades || sheetData.atividades.length === 0) {
+    try {
+      let query = supabaseAdmin
+        .from('atividades')
+        .select('*')
+        .eq('semana', semana);
+
+      if (userId) {
+        query = query.eq('user_id', userId);
+      }
+
+      const { data: atvsDb } = await query;
+      if (atvsDb && atvsDb.length > 0) {
+        listaAtividades = atvsDb.map(a => ({
+          titulo: a.titulo,
+          descricao: a.atividade,
+          assuntoInterno: a.assunto_interno,
+          projeto: a.projeto,
+          tempo: a.tempo
+        }));
+      }
+    } catch (eDb) {
+      console.log('Erro ao buscar do Supabase, tentando Sheets fallback:', eDb.message);
+    }
+
+    if (listaAtividades.length === 0) {
+      try {
+        const sheetRes = await fetch(`${WEBHOOK_URL}?action=semana-relatorio&semana=${encodeURIComponent(semana)}`);
+        const sheetData = await sheetRes.json();
+        if (sheetData && sheetData.status === 'success' && Array.isArray(sheetData.atividades)) {
+          listaAtividades = sheetData.atividades;
+        }
+      } catch (eSheet) {
+        console.log('Erro no fallback do Sheets:', eSheet.message);
+      }
+    }
+
+    if (listaAtividades.length === 0) {
       return res.json({ status: 'empty', quadrantes: [], message: 'Nenhuma atividade encontrada para esta semana.' });
     }
 
     const agrupado = {};
-    for (const atv of sheetData.atividades) {
+    for (const atv of listaAtividades) {
       const chave = atv.assuntoInterno || 'Sem Assunto';
       if (!agrupado[chave]) {
         agrupado[chave] = [];
@@ -1488,7 +1745,7 @@ Se não houver tarefas atribuídas a mim, retorne minhas_tarefas como array vazi
       if (firstBrace !== -1 && lastBrace > firstBrace) {
         try {
           jsonResult = JSON.parse(respostaTexto.substring(firstBrace, lastBrace + 1));
-        } catch(errParse) {
+        } catch (errParse) {
           console.log("Falha no parse do JSON da reunião. Resposta bruta:", respostaTexto.substring(0, 500));
           jsonResult = { nome_reuniao: nome_reuniao, data_reuniao: data_reuniao, resumo_geral: "", minhas_tarefas: [] };
         }
