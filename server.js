@@ -44,6 +44,10 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static('.'));
 
+app.get('/usuarios', (req, res) => {
+  res.sendFile(path.resolve('usuarios.html'));
+});
+
 const MODELOS = [
   process.env.OPENAI_MODEL || 'gpt-5-nano',
   'gpt-4o-mini'
@@ -565,6 +569,60 @@ app.post('/api/setup', async (req, res) => {
   }
 });
 
+function calcularSemanaDeData(dataStr) {
+  if (!dataStr) return '';
+  try {
+    const partes = String(dataStr).split('-');
+    if (partes.length === 3) {
+      const ano = parseInt(partes[0], 10);
+      const mes = parseInt(partes[1], 10) - 1;
+      const dia = parseInt(partes[2], 10);
+      const d = new Date(ano, mes, dia);
+      if (!isNaN(d.getTime())) {
+        const diaSemana = d.getDay();
+        const diffParaSegunda = diaSemana === 0 ? -6 : 1 - diaSemana;
+        const segunda = new Date(d);
+        segunda.setDate(d.getDate() + diffParaSegunda);
+        const domingo = new Date(segunda);
+        domingo.setDate(segunda.getDate() + 6);
+        const pad = n => String(n).padStart(2, '0');
+        return `${pad(segunda.getDate())}/${pad(segunda.getMonth() + 1)} a ${pad(domingo.getDate())}/${pad(domingo.getMonth() + 1)}`;
+      }
+    }
+  } catch (e) {}
+  return '';
+}
+
+function calcularMetasData(dataStr) {
+  let diaSemana = '';
+  let mes = '';
+  let semana = '';
+  if (!dataStr) return { diaSemana, mes, semana };
+  try {
+    const partes = String(dataStr).split('-');
+    if (partes.length === 3) {
+      const ano = parseInt(partes[0], 10);
+      const mesNum = parseInt(partes[1], 10) - 1;
+      const dia = parseInt(partes[2], 10);
+      const d = new Date(ano, mesNum, dia);
+      if (!isNaN(d.getTime())) {
+        const diasSemana = ['domingo', 'segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira', 'sexta-feira', 'sábado'];
+        diaSemana = diasSemana[d.getDay()];
+        const meses = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+        mes = meses[d.getMonth()] + '/' + ano;
+        const diffParaSegunda = d.getDay() === 0 ? -6 : 1 - d.getDay();
+        const segunda = new Date(d);
+        segunda.setDate(d.getDate() + diffParaSegunda);
+        const domingo = new Date(segunda);
+        domingo.setDate(segunda.getDate() + 6);
+        const pad = n => String(n).padStart(2, '0');
+        semana = `${pad(segunda.getDate())}/${pad(segunda.getMonth() + 1)} a ${pad(domingo.getDate())}/${pad(domingo.getMonth() + 1)}`;
+      }
+    }
+  } catch (e) {}
+  return { diaSemana, mes, semana };
+}
+
 app.get('/api/atividades', async (req, res) => {
   const userId = req.headers['x-user-id'] || req.headers['user-id'] || req.query.userId;
   if (!userId) {
@@ -595,19 +653,26 @@ app.get('/api/atividades', async (req, res) => {
       return res.status(500).json({ error: error.message });
     }
 
-    const formatadas = (data || []).map(item => ({
-      id: item.id,
-      data: item.data,
-      semana: item.semana,
-      projeto: item.projeto,
-      assuntoInterno: item.assunto_interno,
-      titulo: item.titulo,
-      atividade: item.atividade,
-      tempo: item.tempo,
-      classNivel1: item.class_nivel_1,
-      classNivel2: item.class_nivel_2,
-      userId: item.user_id
-    }));
+    const formatadas = (data || []).map(item => {
+      const meta = calcularMetasData(item.data);
+      const semanaFinal = (item.semana && item.semana.trim() !== '') ? item.semana : meta.semana;
+      return {
+        id: item.id,
+        row: item.id,
+        data: item.data,
+        diaSemana: meta.diaSemana,
+        mes: meta.mes,
+        semana: semanaFinal,
+        projeto: item.projeto || '',
+        assuntoInterno: item.assunto_interno || '',
+        titulo: item.titulo || '',
+        atividade: item.atividade || '',
+        tempo: item.tempo || '00:00:00',
+        classNivel1: item.class_nivel_1 || '',
+        classNivel2: item.class_nivel_2 || '',
+        userId: item.user_id
+      };
+    });
 
     return res.json({ status: 'success', data: formatadas });
   } catch (err) {
@@ -622,25 +687,34 @@ app.post('/api/atividades', async (req, res) => {
     return res.status(401).json({ error: 'Usuário não autenticado.' });
   }
 
-  const {
-    id, data, semana, projeto, assuntoInterno, assunto_interno,
-    titulo, atividade, descricao, tempo, classNivel1, class_nivel_1,
-    classNivel2, class_nivel_2
-  } = req.body;
+  const b = req.body || {};
+  const dataFinal = b.data || b.Data || new Date().toISOString().split('T')[0];
+  let semanaFinal = b.semana || b['Texto Semana'] || b.textoSemana || '';
+  if (!semanaFinal || semanaFinal.trim() === '') {
+    semanaFinal = calcularSemanaDeData(dataFinal);
+  }
 
-  const novoId = id || `ATV-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+  const projetoFinal = b.projeto || b.Projeto || '';
+  const assuntoFinal = b.assuntoInterno || b.assunto_interno || b['Assunto Interno'] || '';
+  const tituloFinal = b.titulo || b['Título'] || b.Titulo || '';
+  const atividadeFinal = b.atividade || b.descricao || b['Atividade [Deixar claro no texto]'] || b.Atividade || '';
+  const tempoFinal = b.tempo || b['Tempo (HH:MM:SS)'] || b.Tempo || '00:00:00';
+  const c1Final = b.classNivel1 || b.class_nivel_1 || b['Classificação nivel 1'] || b['Classificacao nivel 1'] || b['Classificação Nível 1'] || '';
+  const c2Final = b.classNivel2 || b.class_nivel_2 || b['Classificação nivel 2'] || b['Classificacao nivel 2'] || b['Classificação Nível 2'] || '';
+
+  const novoId = b.id || `ATV-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
   const registro = {
     id: novoId,
     user_id: userId,
-    data: data || new Date().toISOString().split('T')[0],
-    semana: semana || '',
-    projeto: projeto || '',
-    assunto_interno: assuntoInterno || assunto_interno || '',
-    titulo: titulo || '',
-    atividade: atividade || descricao || '',
-    tempo: tempo || '00:00:00',
-    class_nivel_1: classNivel1 || class_nivel_1 || '',
-    class_nivel_2: classNivel2 || class_nivel_2 || '',
+    data: dataFinal,
+    semana: semanaFinal,
+    projeto: projetoFinal,
+    assunto_interno: assuntoFinal,
+    titulo: tituloFinal,
+    atividade: atividadeFinal,
+    tempo: tempoFinal,
+    class_nivel_1: c1Final,
+    class_nivel_2: c2Final,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString()
   };
@@ -686,21 +760,43 @@ app.post('/api/atividades', async (req, res) => {
 app.put('/api/atividades/:id', async (req, res) => {
   const userId = req.headers['x-user-id'] || req.headers['user-id'] || req.body.userId;
   const { id } = req.params;
-  const { data, semana, projeto, assuntoInterno, assunto_interno, titulo, atividade, tempo, classNivel1, class_nivel_1, classNivel2, class_nivel_2 } = req.body;
+  const b = req.body || {};
 
   try {
     const dados = {
       updated_at: new Date().toISOString()
     };
-    if (data !== undefined) dados.data = data;
-    if (semana !== undefined) dados.semana = semana;
-    if (projeto !== undefined) dados.projeto = projeto;
-    if (assuntoInterno !== undefined || assunto_interno !== undefined) dados.assunto_interno = assuntoInterno || assunto_interno;
-    if (titulo !== undefined) dados.titulo = titulo;
-    if (atividade !== undefined) dados.atividade = atividade;
-    if (tempo !== undefined) dados.tempo = tempo;
-    if (classNivel1 !== undefined || class_nivel_1 !== undefined) dados.class_nivel_1 = classNivel1 || class_nivel_1;
-    if (classNivel2 !== undefined || class_nivel_2 !== undefined) dados.class_nivel_2 = classNivel2 || class_nivel_2;
+
+    const dataVal = b.data !== undefined ? b.data : b.Data;
+    if (dataVal !== undefined) dados.data = dataVal;
+
+    const semanaVal = b.semana !== undefined ? b.semana : (b['Texto Semana'] !== undefined ? b['Texto Semana'] : b.textoSemana);
+    if (semanaVal !== undefined) dados.semana = semanaVal;
+
+    const projVal = b.projeto !== undefined ? b.projeto : b.Projeto;
+    if (projVal !== undefined) dados.projeto = projVal;
+
+    const assuntoVal = b.assuntoInterno !== undefined ? b.assuntoInterno : (b.assunto_interno !== undefined ? b.assunto_interno : b['Assunto Interno']);
+    if (assuntoVal !== undefined) dados.assunto_interno = assuntoVal;
+
+    const tituloVal = b.titulo !== undefined ? b.titulo : (b['Título'] !== undefined ? b['Título'] : b.Titulo);
+    if (tituloVal !== undefined) dados.titulo = tituloVal;
+
+    const ativVal = b.atividade !== undefined ? b.atividade : (b.descricao !== undefined ? b.descricao : (b['Atividade [Deixar claro no texto]'] !== undefined ? b['Atividade [Deixar claro no texto]'] : b.Atividade));
+    if (ativVal !== undefined) dados.atividade = ativVal;
+
+    const tempoVal = b.tempo !== undefined ? b.tempo : (b['Tempo (HH:MM:SS)'] !== undefined ? b['Tempo (HH:MM:SS)'] : b.Tempo);
+    if (tempoVal !== undefined) dados.tempo = tempoVal;
+
+    const c1Val = b.classNivel1 !== undefined ? b.classNivel1 : (b.class_nivel_1 !== undefined ? b.class_nivel_1 : (b['Classificação nivel 1'] !== undefined ? b['Classificação nivel 1'] : b['Classificação Nível 1']));
+    if (c1Val !== undefined) dados.class_nivel_1 = c1Val;
+
+    const c2Val = b.classNivel2 !== undefined ? b.classNivel2 : (b.class_nivel_2 !== undefined ? b.class_nivel_2 : (b['Classificação nivel 2'] !== undefined ? b['Classificação nivel 2'] : b['Classificação Nível 2']));
+    if (c2Val !== undefined) dados.class_nivel_2 = c2Val;
+
+    if ((!dados.semana || dados.semana.trim() === '') && dados.data) {
+      dados.semana = calcularSemanaDeData(dados.data);
+    }
 
     let query = supabaseAdmin.from('atividades').update(dados).eq('id', id);
     if (userId) query = query.eq('user_id', userId);
