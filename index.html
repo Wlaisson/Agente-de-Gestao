@@ -1498,52 +1498,98 @@
 
     <datalist id="lista-assuntos-sugeridos"></datalist>
 
-    <script>
-        const originalFetch = window.fetch;
-        window.fetch = function (input, init = {}) {
-            const url = typeof input === 'string' ? input : (input && input.url ? input.url : '');
-            if (url.includes('/api/')) {
-                const user = obterUsuarioLogado();
-                const session = obterSessaoAuth();
-                const headers = new Headers(init.headers || (typeof input === 'object' && input.headers ? input.headers : {}));
-                if (user && user.id && !headers.has('x-user-id')) {
-                    headers.set('x-user-id', user.id);
-                }
-                if (session && session.access_token && !headers.has('Authorization')) {
-                    headers.set('Authorization', `Bearer ${session.access_token}`);
-                }
-                init.headers = headers;
-            }
-            return originalFetch.call(this, input, init);
-        };
+    <script type="module">
+        import { obterUsuarioLogado, obterSessaoAuth, salvarAutenticacao, limparAutenticacao } from './js/features/auth.js';
+        import { installAuthFetchInterceptor } from './js/api/httpClient.js';
+        import { TAB_TITULOS, toggleSidebar } from './js/ui/sidebar.js';
+        import { createAdminUsersModule } from './js/features/admin-users.js';
 
-        function obterUsuarioLogado() {
-            try {
-                const raw = localStorage.getItem('auth_user');
-                return raw ? JSON.parse(raw) : null;
-            } catch (e) {
-                return null;
-            }
-        }
+        installAuthFetchInterceptor({ obterUsuarioLogado, obterSessaoAuth });
 
-        function obterSessaoAuth() {
-            try {
-                const raw = localStorage.getItem('auth_session');
-                return raw ? JSON.parse(raw) : null;
-            } catch (e) {
-                return null;
-            }
-        }
+        const adminUsers = createAdminUsersModule({
+            mostrarToast: (...args) => mostrarToast(...args),
+            obterUsuarioLogado
+        });
 
-        function salvarAutenticacao(session, user) {
-            localStorage.setItem('auth_session', JSON.stringify(session));
-            localStorage.setItem('auth_user', JSON.stringify(user));
-        }
-
-        function limparAutenticacao() {
-            localStorage.removeItem('auth_session');
-            localStorage.removeItem('auth_user');
-        }
+        // <script type="module"> nao expoe bindings de topo em `window`, mas o HTML
+        // desta pagina ainda usa atributos inline (onclick/onsubmit/onchange/ondrop/
+        // ondragover/ondragleave, ~114+ ocorrencias) que o navegador resolve contra
+        // o escopo global. Ponte explicita e mecanica para cada uma - nenhuma logica
+        // muda, apenas o binding de global scope que o `type="module"` deixou de dar
+        // de graca. Lista obtida via grep de todos os atributos de evento do arquivo.
+        window.toggleSidebar = toggleSidebar;
+        window.abrirModalNovoUsuario = adminUsers.abrirModalNovoUsuario;
+        window.fecharModalNovoUsuario = adminUsers.fecharModalNovoUsuario;
+        window.marcarTodasPermissoes = adminUsers.marcarTodasPermissoes;
+        window.salvarNovoUsuario = adminUsers.salvarNovoUsuario;
+        window.excluirUsuarioAdmin = adminUsers.excluirUsuarioAdmin;
+        window.carregarListaUsuariosAdmin = adminUsers.carregarListaUsuariosAdmin;
+        // As pontes abaixo apontam para funcoes declaradas mais adiante neste mesmo
+        // modulo; `function nome(){}` e hoisted no escopo do modulo, entao a
+        // referencia e valida independente da ordem textual.
+        window.abrirEdicao = (...a) => abrirEdicao(...a);
+        window.abrirModalCampanha = (...a) => abrirModalCampanha(...a);
+        window.abrirModalEditarTarefa = (...a) => abrirModalEditarTarefa(...a);
+        window.abrirModalNovaTarefa = (...a) => abrirModalNovaTarefa(...a);
+        window.adicionarAssuntoInterno = (...a) => adicionarAssuntoInterno(...a);
+        window.adicionarClass1 = (...a) => adicionarClass1(...a);
+        window.adicionarClass2Submit = (...a) => adicionarClass2Submit(...a);
+        window.adicionarMinutos = (...a) => adicionarMinutos(...a);
+        window.adicionarMinutosConclusao = (...a) => adicionarMinutosConclusao(...a);
+        window.adicionarMinutosEdicao = (...a) => adicionarMinutosEdicao(...a);
+        window.adicionarProjeto = (...a) => adicionarProjeto(...a);
+        window.alterarSemana = (...a) => alterarSemana(...a);
+        window.alterarSemanaReporter = (...a) => alterarSemanaReporter(...a);
+        window.alterarSemanaResumo = (...a) => alterarSemanaResumo(...a);
+        window.alternarVisibilidadeChave = (...a) => alternarVisibilidadeChave(...a);
+        window.atualizarDashboard = (...a) => atualizarDashboard(...a);
+        window.atualizarHomeDashboard = (...a) => atualizarHomeDashboard(...a);
+        window.atualizarOpcoesClass2 = (...a) => atualizarOpcoesClass2(...a);
+        window.carregarOpcoesSistema = (...a) => carregarOpcoesSistema(...a);
+        window.concluirTarefa = (...a) => concluirTarefa(...a);
+        window.copiarCard = (...a) => copiarCard(...a);
+        window.copiarTudoReporter = (...a) => copiarTudoReporter(...a);
+        window.definirPeriodoRelatorio = (...a) => definirPeriodoRelatorio(...a);
+        window.duplicarAtividade = (...a) => duplicarAtividade(...a);
+        window.editarAssuntoInterno = (...a) => editarAssuntoInterno(...a);
+        window.editarClass1 = (...a) => editarClass1(...a);
+        window.editarProjeto = (...a) => editarProjeto(...a);
+        window.excluirAssuntoInterno = (...a) => excluirAssuntoInterno(...a);
+        window.excluirAtividade = (...a) => excluirAtividade(...a);
+        window.excluirCampanha = (...a) => excluirCampanha(...a);
+        window.excluirCard = (...a) => excluirCard(...a);
+        window.excluirClass1 = (...a) => excluirClass1(...a);
+        window.excluirClass2 = (...a) => excluirClass2(...a);
+        window.excluirProjeto = (...a) => excluirProjeto(...a);
+        window.executarLogin = (...a) => executarLogin(...a);
+        window.fazerLogout = (...a) => fazerLogout(...a);
+        window.fecharModal = (...a) => fecharModal(...a);
+        window.fecharModalCampanha = (...a) => fecharModalCampanha(...a);
+        window.fecharModalConclusao = (...a) => fecharModalConclusao(...a);
+        window.fecharModalEditarKanban = (...a) => fecharModalEditarKanban(...a);
+        window.fecharModalKanban = (...a) => fecharModalKanban(...a);
+        window.filtrarCampanhas = (...a) => filtrarCampanhas(...a);
+        window.gerarRelatorio = (...a) => gerarRelatorio(...a);
+        window.gerarRelatorioReporter = (...a) => gerarRelatorioReporter(...a);
+        window.gerarResumoSemanal = (...a) => gerarResumoSemanal(...a);
+        window.importarAssuntosDoHistorico = (...a) => importarAssuntosDoHistorico(...a);
+        window.imprimirRelatorioFormal = (...a) => imprimirRelatorioFormal(...a);
+        window.iniciarConclusao = (...a) => iniciarConclusao(...a);
+        window.kanbanDragLeave = (...a) => kanbanDragLeave(...a);
+        window.kanbanDragOver = (...a) => kanbanDragOver(...a);
+        window.kanbanDrop = (...a) => kanbanDrop(...a);
+        window.lancarFrequente = (...a) => lancarFrequente(...a);
+        window.limparCampoTempo = (...a) => limparCampoTempo(...a);
+        window.limparCampoTempoEdicao = (...a) => limparCampoTempoEdicao(...a);
+        window.moverCard = (...a) => moverCard(...a);
+        window.renderizarListaAssuntos = (...a) => renderizarListaAssuntos(...a);
+        window.renderizarListaProjetos = (...a) => renderizarListaProjetos(...a);
+        window.salvarCampanha = (...a) => salvarCampanha(...a);
+        window.salvarSetupUsuario = (...a) => salvarSetupUsuario(...a);
+        window.sincronizarAgenda = (...a) => sincronizarAgenda(...a);
+        window.switchSubTabGerenciar = (...a) => switchSubTabGerenciar(...a);
+        window.switchTab = (...a) => switchTab(...a);
+        window.toggleGravacaoKanban = (...a) => toggleGravacaoKanban(...a);
 
         function abrirTelaLogin() {
             const overlay = document.getElementById('login-overlay');
@@ -1815,187 +1861,10 @@
             }
         }
 
-        async function carregarListaUsuariosAdmin(forcado = false) {
-            const user = obterUsuarioLogado();
-            if (!user || !user.is_admin) return;
-
-            const tbody = document.getElementById('admin-users-tbody');
-            if (!tbody) return;
-
-            if (forcado) {
-                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 2rem; color: var(--text-muted);">Sincronizando com o Supabase...</td></tr>';
-            }
-
-            try {
-                const res = await fetch('/api/admin/usuarios');
-                const result = await res.json();
-
-                if (!res.ok || result.status !== 'success') {
-                    throw new Error(result.error || 'Erro ao buscar usuários.');
-                }
-
-                const usuarios = result.data || [];
-                if (usuarios.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 2rem; color: var(--text-muted);">Nenhum usuário cadastrado além do administrador.</td></tr>';
-                    return;
-                }
-
-                let html = '';
-                usuarios.forEach(u => {
-                    const nome = u.nome || u.email.split('@')[0];
-                    const partes = nome.trim().split(' ');
-                    const iniciais = partes.length > 1
-                        ? (partes[0][0] + partes[partes.length - 1][0]).toUpperCase()
-                        : nome.substring(0, 2).toUpperCase();
-
-                    const dataFormatada = u.created_at ? new Date(u.created_at).toLocaleDateString('pt-BR') : '-';
-                    const roleBadge = u.is_admin
-                        ? '<span class="user-role-badge badge-role-admin">Admin</span>'
-                        : '<span class="user-role-badge badge-role-membro">Membro</span>';
-
-                    let abasHtml = '';
-                    if (u.is_admin) {
-                        abasHtml = '<span class="badge-tab-item" style="color: #9333ea; font-weight: 600;">Acesso Total (Todas as Abas)</span>';
-                    } else if (u.permissoes && Array.isArray(u.permissoes.abas) && u.permissoes.abas.length > 0) {
-                        abasHtml = u.permissoes.abas.map(a => `<span class="badge-tab-item">${TAB_TITULOS[a] || a}</span>`).join(' ');
-                    } else {
-                        abasHtml = '<span class="badge-tab-item" style="color: var(--danger);">Sem abas atribuídas</span>';
-                    }
-
-                    const acaoExcluir = u.is_admin
-                        ? '<span style="color: var(--text-muted); font-size: 0.8rem;">Protegido</span>'
-                        : `<button type="button" class="btn btn-secondary" onclick="excluirUsuarioAdmin('${u.id}', '${nome}')" style="width: auto; padding: 0.35rem 0.75rem; font-size: 0.8rem; color: var(--danger); border-color: rgba(239, 68, 68, 0.3);">Excluir</button>`;
-
-                    html += `
-                        <tr>
-                            <td>
-                                <div class="user-table-cell-info">
-                                    <div class="user-table-avatar">${iniciais}</div>
-                                    <div>
-                                        <div style="font-weight: 600;">${nome}</div>
-                                        <div style="font-size: 0.8rem; color: var(--text-muted);">${u.email}</div>
-                                    </div>
-                                </div>
-                            </td>
-                            <td>${roleBadge}</td>
-                            <td style="max-width: 320px;">${abasHtml}</td>
-                            <td>${dataFormatada}</td>
-                            <td style="text-align: right;">${acaoExcluir}</td>
-                        </tr>
-                    `;
-                });
-
-                tbody.innerHTML = html;
-            } catch (err) {
-                tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--danger); padding: 2rem;">Erro ao carregar usuários: ${err.message}</td></tr>`;
-            }
-        }
-
-        function abrirModalNovoUsuario() {
-            const modal = document.getElementById('modalNovoUsuario');
-            const erroEl = document.getElementById('novo-usuario-erro');
-            if (erroEl) erroEl.style.display = 'none';
-            if (modal) {
-                modal.style.display = 'flex';
-                modal.classList.add('active');
-            }
-        }
-
-        function fecharModalNovoUsuario() {
-            const modal = document.getElementById('modalNovoUsuario');
-            if (modal) {
-                modal.style.display = 'none';
-                modal.classList.remove('active');
-            }
-        }
-
-        function marcarTodasPermissoes(marcar) {
-            document.querySelectorAll('#grid-permissoes-usuario input[type="checkbox"]').forEach(chk => {
-                chk.checked = marcar;
-            });
-        }
-
-        async function salvarNovoUsuario(event) {
-            event.preventDefault();
-            const nomeInput = document.getElementById('novo-user-nome');
-            const emailInput = document.getElementById('novo-user-email');
-            const senhaInput = document.getElementById('novo-user-senha');
-            const erroEl = document.getElementById('novo-usuario-erro');
-            const btnSubmit = document.getElementById('btn-submit-novo-user');
-
-            if (!nomeInput || !emailInput || !senhaInput) return;
-            const nome = nomeInput.value.trim();
-            const email = emailInput.value.trim();
-            const password = senhaInput.value;
-
-            const abas = [];
-            document.querySelectorAll('#grid-permissoes-usuario input[type="checkbox"]:checked').forEach(chk => {
-                abas.push(chk.value);
-            });
-
-            if (erroEl) erroEl.style.display = 'none';
-            if (btnSubmit) {
-                btnSubmit.disabled = true;
-                btnSubmit.textContent = 'Criando no Supabase Auth...';
-            }
-
-            try {
-                const res = await fetch('/api/admin/usuarios', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        nome,
-                        email,
-                        password,
-                        permissoes: { abas }
-                    })
-                });
-
-                const data = await res.json();
-                if (!res.ok || data.status !== 'success') {
-                    throw new Error(data.error || 'Erro ao criar usuário.');
-                }
-
-                mostrarToast('Usuário cadastrado com sucesso!', 'success');
-                fecharModalNovoUsuario();
-                nomeInput.value = '';
-                emailInput.value = '';
-                senhaInput.value = '';
-                carregarListaUsuariosAdmin(true);
-            } catch (err) {
-                if (erroEl) {
-                    erroEl.textContent = err.message;
-                    erroEl.style.display = 'block';
-                }
-            } finally {
-                if (btnSubmit) {
-                    btnSubmit.disabled = false;
-                    btnSubmit.innerHTML = '<span><svg class="app-icon" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span> Criar Usuário com Acesso';
-                }
-            }
-        }
-
-        async function excluirUsuarioAdmin(id, nome) {
-            if (!confirm(`Tem certeza que deseja excluir o usuário "${nome}"? O acesso será revogado imediatamente.`)) {
-                return;
-            }
-
-            try {
-                const res = await fetch(`/api/admin/usuarios/${id}`, {
-                    method: 'DELETE'
-                });
-                const data = await res.json();
-
-                if (!res.ok || data.status !== 'success') {
-                    throw new Error(data.error || 'Erro ao excluir usuário.');
-                }
-
-                mostrarToast('Usuário removido com sucesso.', 'info');
-                carregarListaUsuariosAdmin(true);
-            } catch (err) {
-                mostrarToast(err.message, 'error');
-            }
-        }
+        // carregarListaUsuariosAdmin / abrirModalNovoUsuario / fecharModalNovoUsuario /
+        // marcarTodasPermissoes / salvarNovoUsuario / excluirUsuarioAdmin agora vivem em
+        // js/features/admin-users.js (compartilhado com usuarios.html) e sao expostas
+        // via `adminUsers.*` + bridges `window.*` no topo deste script.
 
         const APP_SVG_ICONS = {
             home: '<svg class="app-icon" viewBox="0 0 24 24"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>',
@@ -2958,31 +2827,8 @@
             mostrarToast('Dados da atividade frequente preenchidos!', 'info');
         }
 
-        const TAB_TITULOS = {
-            'home-tab': 'Início / Home Dashboard',
-            'registro-tab': 'Criar Nova Atividade',
-            'kanban-tab': 'Quadro Kanban',
-            'campanhas-tab': 'Gestão de Campanhas',
-            'reporter-tab': 'Agente Reporter 4',
-            'semana-tab': 'Atividades da Semana',
-            'resumo-tab': 'Resumo Executivo',
-            'relatorios-tab': 'Dashboard & Relatórios',
-            'tarefas-tab': 'Tarefas de Reuniões',
-            'gerenciar-tab': 'Gerenciamento de Assuntos & Opções',
-            'setup-tab': 'Configurações de IA & Chaves',
-            'usuarios-admin-tab': 'Gestão de Usuários (RBAC)'
-        };
-
         let campanhasDados = [];
         let filtroCampanhaAtual = 'Todas';
-
-        function toggleSidebar() {
-            const sb = document.getElementById('app-sidebar');
-            const bd = document.getElementById('sidebar-backdrop');
-            if (!sb) return;
-            sb.classList.toggle('open');
-            if (bd) bd.classList.toggle('active');
-        }
 
         function switchTab(tabId) {
             const user = obterUsuarioLogado();
@@ -3041,7 +2887,7 @@
             } else if (tabId === 'setup-tab' || tabId === 'relatorios-tab') {
                 carregarSetupUsuario();
             } else if (tabId === 'usuarios-admin-tab') {
-                carregarListaUsuariosAdmin(true);
+                adminUsers.carregarListaUsuariosAdmin(true);
             }
         }
 
