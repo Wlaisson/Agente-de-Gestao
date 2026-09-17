@@ -1,113 +1,20 @@
 import { Router } from 'express';
-import multer from 'multer';
-import OpenAI, { toFile } from 'openai';
-import fs from 'fs';
 import path from 'path';
-import { supabase, supabaseAdmin } from '../../supabaseClient.js';
+import { supabaseAdmin } from '../../supabaseClient.js';
 import { WEBHOOK_URL } from '../../config/env.js';
 import { opcoesRepository } from '../repositories/SupabaseOpcoesRepository.js';
 import { kanbanRepository } from '../repositories/SupabaseKanbanRepository.js';
+import { openAIGateway } from '../gateways/OpenAIGateway.js';
 
 // Rotas ainda nao migradas para a camada de use-cases/repositories (fase 3
 // so faz o dominio Auth/Admin). Corte-e-cola verbatim do antigo server.js -
 // cada dominio abaixo migra em uma fase seguinte (opcoes, atividades, kanban,
 // transcricao, relatorios, reuniao), reduzindo este arquivo ate ele sumir.
 const router = Router();
-const openaiGlobal = process.env.OPENAI_API_KEY
-  ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
-  : null;
-const upload = multer({ storage: multer.memoryStorage() });
-
-
-
 
 router.get('/usuarios', (req, res) => {
   res.sendFile(path.resolve('usuarios.html'));
 });
-
-const MODELOS = [
-  process.env.OPENAI_MODEL || 'gpt-5-nano',
-  'gpt-4o-mini'
-];
-
-async function obterClienteOpenAI(userId) {
-  if (userId) {
-    try {
-      const { data, error } = await supabaseAdmin
-        .from('setup_usuario')
-        .select('openai_api_key, openai_model')
-        .eq('user_id', userId)
-        .single();
-
-      if (!error && data && data.openai_api_key) {
-        return {
-          openai: new OpenAI({ apiKey: data.openai_api_key }),
-          modelos: [data.openai_model || 'gpt-4o-mini', 'gpt-4o-mini']
-        };
-      }
-    } catch (e) {
-      console.error(e);
-    }
-  }
-
-  if (openaiGlobal) {
-    return {
-      openai: openaiGlobal,
-      modelos: MODELOS
-    };
-  }
-
-  try {
-    const { data, error } = await supabaseAdmin
-      .from('setup_usuario')
-      .select('openai_api_key, openai_model')
-      .not('openai_api_key', 'is', null)
-      .limit(1);
-
-    if (!error && data && data.length > 0 && data[0].openai_api_key) {
-      return {
-        openai: new OpenAI({ apiKey: data[0].openai_api_key }),
-        modelos: [data[0].openai_model || 'gpt-4o-mini', 'gpt-4o-mini']
-      };
-    }
-  } catch (e) {
-    console.error(e);
-  }
-
-  throw new Error('Setup incompleto: Chave da OpenAI não configurada');
-}
-
-async function chamarModelo(params, clientOverride, modelosOverride) {
-  const openaiInstance = clientOverride || openaiGlobal;
-  if (!openaiInstance) {
-    throw new Error('Setup incompleto: Chave da OpenAI não configurada');
-  }
-  const listaModelos = modelosOverride && modelosOverride.length > 0 ? modelosOverride : MODELOS;
-  let ultimoErro;
-  for (const modelo of listaModelos) {
-    try {
-      const payload = { ...params, model: modelo };
-      if (payload.max_tokens && !payload.max_completion_tokens) {
-        payload.max_completion_tokens = payload.max_tokens;
-        delete payload.max_tokens;
-      }
-      if (modelo.startsWith('gpt-5') || modelo.startsWith('o1') || modelo.startsWith('o3') || modelo.startsWith('o4')) {
-        delete payload.temperature;
-      }
-      const resultado = await openaiInstance.chat.completions.create(payload);
-      return resultado;
-    } catch (err) {
-      ultimoErro = err;
-      console.log(`[MODELO] Falha com ${modelo}: ${err.status || err.message}`);
-    }
-  }
-  throw ultimoErro;
-}
-
-const chamarModeloComFallback = chamarModelo;
-
-
-
 
 
 
@@ -195,335 +102,6 @@ router.post('/api/setup', async (req, res) => {
 
 
 
-router.post('/api/transcrever', upload.single('audio'), async (req, res) => {
-  if (!req.file) {
-    return res.status(400).json({ error: 'Nenhum arquivo enviado.' });
-  }
-
-  const userId = req.headers['x-user-id'] || req.headers['user-id'] || req.body?.userId;
-  let openAiConfig;
-  try {
-    openAiConfig = await obterClienteOpenAI(userId);
-  } catch (errSetup) {
-    return res.status(400).json({ error: errSetup.message });
-  }
-
-  try {
-    const audioFile = await toFile(req.file.buffer, req.file.originalname || 'audio.webm', {
-      type: req.file.mimetype || 'audio/webm'
-    });
-
-    const transcricao = await openAiConfig.openai.audio.transcriptions.create({
-      file: audioFile,
-      model: 'whisper-1',
-      language: 'pt',
-      response_format: 'json',
-    });
-
-    const textoCompleto = transcricao.text;
-
-    const opcoes = await opcoesRepository.carregar();
-    const { projetosStr, assuntosStr, classificacoesStr } = formatarListasParaPrompt(opcoes);
-
-    const systemPrompt = `Você é um assistente executivo de alta senioridade, especializado em registrar atividades corporativas e de engenharia/produto com linguagem formal, concisa e altamente profissional.
-Receberás a transcrição falada de um relato de atividade de um profissional. Transcrições de voz frequentemente contêm correções espontâneas ("ou melhor", "digo"), hesitações, gírias e linguagem informal ("a gente", "né").
-
-Sua obrigação é filtrar esses vícios e transformar o relato em um registro técnico e executivo impecável.
-
-Retorne EXCLUSIVAMENTE um objeto JSON válido com os seguintes campos:
-
-{
-  "projeto_oficial": "Identifique e selecione o projeto EXATO da 'Lista de Projetos Válidos'. Se o usuário mencionar 'projeto interno' ou 'interno', mapeie para 'Interno'.",
-  "assunto_interno": "Identifique e selecione o assunto interno EXATO da 'Lista de Assuntos Internos Válidos'. Ex: se o usuário falar 'agente de aplicação', selecione 'Agente de Aplicações'. Se falar 'reunião com fulano', selecione o assunto correspondente.",
-  "titulo": "Crie um título executivo de alto nível, sintético e profissional (3 a 6 palavras) que resuma o núcleo da atividade. NUNCA use palavras truncadas e NUNCA copie o início da transcrição.",
-  "descricao": "Redija um resumo formal, objetivo e detalhado em terceira pessoa (voz passiva executiva, ex: 'Realizada reunião...', 'Alinhamento com...', 'Desenvolvido...'). Elimine vícios de fala, redundâncias e informalidades. Destaque com clareza o objetivo, as deliberações técnicas e os desdobramentos práticos.",
-  "tempo": "Extraia o tempo final mencionado no formato HH:MM:SS. Ex: se mencionou '20 minutos, 25 minutos', adote 00:25:00. Padrão: 01:00:00 se não especificado.",
-  "classNivel1": "Selecione o Nível 1 da combinação mais aderente da lista.",
-  "classNivel2": "Selecione o Nível 2 correspondente ao Nível 1 escolhido da lista."
-}
-
-Lista de Projetos Válidos:
-${projetosStr}
-
-Lista de Assuntos Internos Válidos:
-${assuntosStr}
-
-Lista de Combinações de Classificação (Nível 1 / Nível 2):
-${classificacoesStr}
-
-Diretrizes Críticas:
-1. Jamais devolva a transcrição crua na descrição.
-2. Jamais trunque frases no título.
-3. O JSON deve ser 100% puro e parseável.`;
-
-    const completions = await chamarModeloComFallback({
-      messages: [
-        {
-          role: 'system',
-          content: systemPrompt,
-        },
-        {
-          role: 'user',
-          content: `Relato transcrito:\n"${textoCompleto}"`,
-        },
-      ],
-      temperature: 0.1,
-      max_tokens: 1500,
-      response_format: { type: 'json_object' }
-    }, openAiConfig.openai, openAiConfig.modelos);
-
-    let respostaTexto = completions.choices[0].message.content.trim();
-
-    respostaTexto = respostaTexto.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
-
-    if (respostaTexto.startsWith('```json')) {
-      respostaTexto = respostaTexto.replace(/^```json/i, '').replace(/```$/i, '').trim();
-    } else if (respostaTexto.startsWith('```')) {
-      respostaTexto = respostaTexto.replace(/^```/i, '').replace(/```$/i, '').trim();
-    }
-
-    let jsonResult;
-    try {
-      jsonResult = JSON.parse(respostaTexto);
-    } catch (e) {
-      const firstBrace = respostaTexto.indexOf('{');
-      const lastBrace = respostaTexto.lastIndexOf('}');
-      if (firstBrace !== -1 && lastBrace > firstBrace) {
-        try {
-          jsonResult = JSON.parse(respostaTexto.substring(firstBrace, lastBrace + 1));
-        } catch (innerErr) {
-          jsonResult = null;
-        }
-      }
-      if (!jsonResult) {
-        const matchTitulo = respostaTexto.match(/"titulo"\s*:\s*"([^"]+)"/i);
-        const matchDesc = respostaTexto.match(/"descricao"\s*:\s*"([^"]+)"/i);
-        const matchProj = respostaTexto.match(/"projeto_oficial"\s*:\s*"([^"]+)"/i);
-        const matchAssunto = respostaTexto.match(/"assunto_interno"\s*:\s*"([^"]+)"/i);
-        const matchTempo = respostaTexto.match(/"tempo"\s*:\s*"([^"]+)"/i);
-        const matchC1 = respostaTexto.match(/"classNivel1"\s*:\s*"([^"]+)"/i);
-        const matchC2 = respostaTexto.match(/"classNivel2"\s*:\s*"([^"]+)"/i);
-
-        jsonResult = {
-          projeto_oficial: matchProj ? matchProj[1] : 'Interno',
-          assunto_interno: matchAssunto ? matchAssunto[1] : '',
-          titulo: matchTitulo ? matchTitulo[1] : 'Registro de Atividade',
-          descricao: matchDesc ? matchDesc[1] : 'Atividade realizada conforme alinhamento.',
-          tempo: matchTempo ? matchTempo[1] : '01:00:00',
-          classNivel1: matchC1 ? matchC1[1] : '',
-          classNivel2: matchC2 ? matchC2[1] : ''
-        };
-      }
-    }
-
-    res.json(jsonResult);
-
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Erro ao processar áudio.' });
-  }
-});
-
-
-
-router.post('/api/transcrever-kanban', upload.single('audio'), async (req, res) => {
-  if (!req.file) {
-    return res.status(400).json({ error: 'Nenhum arquivo enviado.' });
-  }
-
-  const userId = req.headers['x-user-id'] || req.headers['user-id'] || req.body?.userId;
-  let openAiConfig;
-  try {
-    openAiConfig = await obterClienteOpenAI(userId);
-  } catch (errSetup) {
-    return res.status(400).json({ error: errSetup.message });
-  }
-
-  try {
-    const audioFile = await toFile(req.file.buffer, req.file.originalname || 'audio.webm', {
-      type: req.file.mimetype || 'audio/webm'
-    });
-
-    const transcricao = await openAiConfig.openai.audio.transcriptions.create({
-      file: audioFile,
-      model: 'whisper-1',
-      language: 'pt',
-      response_format: 'json',
-    });
-
-    const textoCompleto = transcricao.text ? transcricao.text.trim() : '';
-
-    if (!textoCompleto) {
-      return res.status(400).json({ error: 'Nenhuma fala foi identificada no áudio. Fale mais próximo ao microfone e tente novamente.' });
-    }
-
-    const opcoes = await opcoesRepository.carregar();
-    const { projetosStr, assuntosStr, classificacoesStr } = formatarListasParaPrompt(opcoes);
-
-    const systemPrompt = `Você é um assistente de gestão de projetos que extrai TAREFAS PENDENTES a partir de áudio para um Quadro Kanban.
-O usuário vai ditar tarefas que PRECISAM SER FEITAS (não são atividades já concluídas).
-
-Sua tarefa é interpretar o texto e retornar APENAS um objeto JSON válido com a seguinte estrutura:
-
-{
-  "tarefas": [
-    {
-      "titulo": "Título curto, executivo e acionável da tarefa (máximo 8 palavras, comece preferencialmente com verbo no infinitivo: Implementar, Corrigir, Revisar, Configurar, etc.)",
-      "descricao": "Descrição detalhada do que precisa ser feito, com contexto relevante em terceira pessoa.",
-      "projeto": "SELECIONE OBRIGATORIAMENTE um projeto corporativo da lista abaixo. Se não mencionado ou incerto, use 'Interno' ou deixe vazio.",
-      "assunto_interno": "SELECIONE OBRIGATORIAMENTE um 'Assunto Interno' da 'Lista de assuntos internos válidos' no final deste prompt. Não invente assuntos novos, selecione o mais correspondente da lista.",
-      "classNivel1": "SELECIONE OBRIGATORIAMENTE uma 'Classificação nível 1' a partir da lista fornecida abaixo.",
-      "classNivel2": "SELECIONE OBRIGATORIAMENTE uma 'Classificação nível 2' que corresponda à 'Classificação nível 1' escolhida, baseando-se EXATAMENTE nas combinações da lista abaixo.",
-      "prioridade": "Alta, Média ou Baixa (infira pela urgência e tom do áudio, use Média como padrão)",
-      "prazo": "Data no formato YYYY-MM-DD se mencionada no áudio, ou vazio se não houver"
-    }
-  ]
-}
-
-Se o usuário mencionar MÚLTIPLAS tarefas, divida e extraia TODAS como itens separados no array.
-Se mencionar apenas UMA tarefa, retorne um array com 1 item.
-
-Lista de projetos válidos (retorne exatamente como escrito aqui):
-${projetosStr}
-
-Lista de assuntos internos válidos (retorne exatamente como escrito aqui):
-${assuntosStr}
-
-Lista de combinações válidas de Classificação nível 1 / Classificação nível 2 (escolha exatamente um par desta lista):
-${classificacoesStr}
-
-Regras fonéticas e de correção:
-- Corrija "Process" ou "Proces" para "Prosis".
-- Corrija "Via Mar" para "Viamar".
-- Corrija "Rede Pro" para "Rede Pró".
-
-Retorne APENAS o JSON, sem formatação markdown ou textos adicionais.`;
-
-    let jsonResult = null;
-    try {
-      const completions = await chamarModeloComFallback({
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: `Texto transcrito:\n"${textoCompleto}"` },
-        ],
-        temperature: 0.1,
-        max_tokens: 2000,
-        response_format: { type: 'json_object' }
-      }, openAiConfig.openai, openAiConfig.modelos);
-
-      let respostaTexto = completions.choices[0].message.content.trim();
-      respostaTexto = respostaTexto.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
-
-      if (respostaTexto.startsWith('```json')) {
-        respostaTexto = respostaTexto.replace(/^```json/i, '').replace(/```$/i, '').trim();
-      } else if (respostaTexto.startsWith('```')) {
-        respostaTexto = respostaTexto.replace(/^```/i, '').replace(/```$/i, '').trim();
-      }
-
-      try {
-        jsonResult = JSON.parse(respostaTexto);
-      } catch (e) {
-        const firstBrace = respostaTexto.indexOf('{');
-        const lastBrace = respostaTexto.lastIndexOf('}');
-        if (firstBrace !== -1 && lastBrace > firstBrace) {
-          try {
-            jsonResult = JSON.parse(respostaTexto.substring(firstBrace, lastBrace + 1));
-          } catch (errParse) {
-            jsonResult = null;
-          }
-        }
-      }
-    } catch (errIa) {
-      console.error('Falha nos modelos de IA para Kanban:', errIa);
-    }
-
-    if (!jsonResult || !Array.isArray(jsonResult.tarefas) || jsonResult.tarefas.length === 0) {
-      jsonResult = {
-        tarefas: [{
-          titulo: 'Nova Tarefa Registrada',
-          descricao: 'Demanda capturada via áudio para detalhamento e execução.',
-          projeto: 'Interno',
-          assunto_interno: '',
-          classNivel1: '',
-          classNivel2: '',
-          prioridade: 'Média',
-          prazo: ''
-        }]
-      };
-    }
-
-    let cards = await kanbanRepository.listarCards();
-    const tarefasSalvas = [];
-    const hojeStr = new Date().toISOString().split('T')[0];
-
-    for (const tarefa of (jsonResult.tarefas || [jsonResult])) {
-      const novoCard = {
-        id: `K-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-        titulo: tarefa.titulo || 'Nova Tarefa',
-        descricao: tarefa.descricao || '',
-        projeto: tarefa.projeto || '',
-        assuntoInterno: tarefa.assunto_interno || tarefa.assuntoInterno || '',
-        classNivel1: tarefa.classNivel1 || '',
-        classNivel2: tarefa.classNivel2 || '',
-        prioridade: tarefa.prioridade || 'Média',
-        status: 'A Fazer',
-        dataCriacao: hojeStr,
-        prazo: tarefa.prazo || '',
-        tempo: ''
-      };
-
-      cards.unshift(novoCard);
-      tarefasSalvas.push(novoCard);
-
-      try {
-        await supabase.from('kanban_cards').upsert({
-          id: novoCard.id,
-          titulo: novoCard.titulo,
-          descricao: novoCard.descricao,
-          projeto: novoCard.projeto,
-          assunto_interno: novoCard.assuntoInterno,
-          class_nivel_1: novoCard.classNivel1,
-          class_nivel_2: novoCard.classNivel2,
-          prioridade: novoCard.prioridade,
-          status: 'A Fazer',
-          data_criacao: novoCard.dataCriacao,
-          prazo: novoCard.prazo,
-          tempo: '',
-          updated_at: new Date().toISOString()
-        });
-      } catch (e) {
-        console.error(e);
-      }
-
-      fetch(WEBHOOK_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'add_kanban',
-          titulo: novoCard.titulo,
-          descricao: novoCard.descricao,
-          projeto: novoCard.projeto,
-          assunto_interno: novoCard.assuntoInterno,
-          classNivel1: novoCard.classNivel1,
-          classNivel2: novoCard.classNivel2,
-          prioridade: novoCard.prioridade,
-          prazo: novoCard.prazo,
-          status: 'A Fazer'
-        })
-      }).catch(err => console.error(err));
-    }
-
-    kanbanRepository.salvarCardsLocais(cards);
-
-    res.json({ tarefas: tarefasSalvas });
-
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Erro ao processar áudio para Kanban.' });
-  }
-});
-
-
 router.post('/api/gerar-relatorio', async (req, res) => {
   const { semana } = req.body;
 
@@ -534,7 +112,7 @@ router.post('/api/gerar-relatorio', async (req, res) => {
   const userId = req.headers['x-user-id'] || req.headers['user-id'] || req.body?.userId;
   let openAiConfig;
   try {
-    openAiConfig = await obterClienteOpenAI(userId);
+    openAiConfig = await openAIGateway.obterCliente(userId);
   } catch (errSetup) {
     return res.status(400).json({ error: errSetup.message });
   }
@@ -634,7 +212,7 @@ CRÍTICO E MANDATÓRIO:
 3. O formato deve ser um objeto JSON puro.`;
 
 
-    const completions = await chamarModeloComFallback({
+    const completions = await openAIGateway.chamarModelo({
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: `Dados desta semana:\n${textoAgrupado}` },
@@ -690,7 +268,7 @@ router.post('/api/gerar-relatorio-reporter', async (req, res) => {
   const userId = req.headers['x-user-id'] || req.headers['user-id'] || req.body?.userId;
   let openAiConfig;
   try {
-    openAiConfig = await obterClienteOpenAI(userId);
+    openAiConfig = await openAIGateway.obterCliente(userId);
   } catch (errSetup) {
     return res.status(400).json({ error: errSetup.message });
   }
@@ -807,7 +385,7 @@ REGRAS CRÍTICAS:
 - Mantenha TODOS os assuntos internos recebidos, mesmo que tenham apenas 1 atividade.
 - Dentro de cada assunto, o número de itens finais pode ser MENOR que o número de atividades recebidas (por causa da consolidação), mas NUNCA maior.`;
 
-    const completions = await chamarModeloComFallback({
+    const completions = await openAIGateway.chamarModelo({
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: `Atividades da semana:\n${textoAgrupado}` },
@@ -868,7 +446,7 @@ router.post('/api/processar-reuniao', async (req, res) => {
   const userId = req.headers['x-user-id'] || req.headers['user-id'] || req.body?.userId;
   let openAiConfig;
   try {
-    openAiConfig = await obterClienteOpenAI(userId);
+    openAiConfig = await openAIGateway.obterCliente(userId);
   } catch (errSetup) {
     return res.status(400).json({ error: errSetup.message });
   }
@@ -907,7 +485,7 @@ Exemplo de resposta correta:
 
 Se não houver tarefas atribuídas a mim, retorne minhas_tarefas como array vazio [].`;
 
-    const completions = await chamarModeloComFallback({
+    const completions = await openAIGateway.chamarModelo({
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: `Dados da Agenda:\nNome da Reunião: ${nome_reuniao || 'Não informado'}\nData: ${data_reuniao || 'Não informada'}\n\nTexto da Transcrição:\n${textoCompleto}` },

@@ -5,6 +5,8 @@ import { createSupabaseUsuarioRepository } from '../repositories/SupabaseUsuario
 import { createSupabaseOpcoesRepository } from '../repositories/SupabaseOpcoesRepository.js';
 import { createSupabaseAtividadeRepository } from '../repositories/SupabaseAtividadeRepository.js';
 import { createSupabaseKanbanRepository } from '../repositories/SupabaseKanbanRepository.js';
+import { createOpenAIGateway } from '../gateways/OpenAIGateway.js';
+import { openaiGlobal, MODELOS } from '../../infrastructure/openai/openaiClient.js';
 import { makeAutenticarUsuarioUseCase } from '../../application/use-cases/auth/AutenticarUsuarioUseCase.js';
 import { makeCriarUsuarioUseCase } from '../../application/use-cases/admin/CriarUsuarioUseCase.js';
 import { makeListarUsuariosUseCase } from '../../application/use-cases/admin/ListarUsuariosUseCase.js';
@@ -21,16 +23,20 @@ import { makeAtualizarStatusCardUseCase } from '../../application/use-cases/kanb
 import { makeExcluirCardUseCase } from '../../application/use-cases/kanban/ExcluirCardUseCase.js';
 import { makeConcluirCardUseCase } from '../../application/use-cases/kanban/ConcluirCardUseCase.js';
 import { makeEditarCardUseCase } from '../../application/use-cases/kanban/EditarCardUseCase.js';
+import { makeTranscreverAudioParaAtividadeUseCase } from '../../application/use-cases/transcricao/TranscreverAudioParaAtividadeUseCase.js';
+import { makeTranscreverAudioParaCardUseCase } from '../../application/use-cases/transcricao/TranscreverAudioParaCardUseCase.js';
 import { makeAuthController } from '../controllers/authController.js';
 import { makeAdminController } from '../controllers/adminController.js';
 import { makeOpcoesController } from '../controllers/opcoesController.js';
 import { makeAtividadesController } from '../controllers/atividadesController.js';
 import { makeKanbanController } from '../controllers/kanbanController.js';
+import { makeTranscricaoController } from '../controllers/transcricaoController.js';
 import { createAuthRoutes } from './authRoutes.js';
 import { createAdminRoutes } from './adminRoutes.js';
 import { createOpcoesRoutes } from './opcoesRoutes.js';
 import { createAtividadesRoutes } from './atividadesRoutes.js';
 import { createKanbanRoutes } from './kanbanRoutes.js';
+import { createTranscricaoRoutes } from './transcricaoRoutes.js';
 import legacyRoutes from './legacyRoutes.js';
 
 // Composition root: monta repositories -> use-cases -> controllers -> routers
@@ -42,6 +48,7 @@ export function createRoutes() {
   const opcoesRepository = createSupabaseOpcoesRepository({ supabaseAdmin });
   const atividadeRepository = createSupabaseAtividadeRepository({ supabaseAdmin });
   const kanbanRepository = createSupabaseKanbanRepository({ supabase });
+  const openAIGateway = createOpenAIGateway({ supabaseAdmin, openaiGlobal, modelosPadrao: MODELOS });
 
   const autenticarUsuario = makeAutenticarUsuarioUseCase({ usuarioRepository });
   const criarUsuario = makeCriarUsuarioUseCase({ usuarioRepository });
@@ -59,6 +66,8 @@ export function createRoutes() {
   const excluirCard = makeExcluirCardUseCase({ kanbanRepository });
   const concluirCard = makeConcluirCardUseCase({ kanbanRepository });
   const editarCard = makeEditarCardUseCase({ kanbanRepository });
+  const transcreverAudioParaAtividade = makeTranscreverAudioParaAtividadeUseCase({ openAIGateway, opcoesRepository });
+  const transcreverAudioParaCard = makeTranscreverAudioParaCardUseCase({ openAIGateway, opcoesRepository, kanbanRepository });
 
   const authController = makeAuthController({ autenticarUsuario });
   const adminController = makeAdminController({ criarUsuario, listarUsuarios, excluirUsuario });
@@ -77,6 +86,10 @@ export function createRoutes() {
     concluirCard,
     editarCard
   });
+  const transcricaoController = makeTranscricaoController({
+    transcreverAudioParaAtividade,
+    transcreverAudioParaCard
+  });
 
   const router = Router();
   router.use(createAuthRoutes({ authController }));
@@ -84,6 +97,7 @@ export function createRoutes() {
   router.use(createOpcoesRoutes({ opcoesController }));
   router.use(createAtividadesRoutes({ atividadesController }));
   router.use(createKanbanRoutes({ kanbanController }));
+  router.use(createTranscricaoRoutes({ transcricaoController }));
   router.use(legacyRoutes);
   return router;
 }
