@@ -25,18 +25,21 @@ import { makeConcluirCardUseCase } from '../../application/use-cases/kanban/Conc
 import { makeEditarCardUseCase } from '../../application/use-cases/kanban/EditarCardUseCase.js';
 import { makeTranscreverAudioParaAtividadeUseCase } from '../../application/use-cases/transcricao/TranscreverAudioParaAtividadeUseCase.js';
 import { makeTranscreverAudioParaCardUseCase } from '../../application/use-cases/transcricao/TranscreverAudioParaCardUseCase.js';
+import { makeGerarRelatorioSemanalUseCase } from '../../application/use-cases/relatorios/GerarRelatorioSemanalUseCase.js';
 import { makeAuthController } from '../controllers/authController.js';
 import { makeAdminController } from '../controllers/adminController.js';
 import { makeOpcoesController } from '../controllers/opcoesController.js';
 import { makeAtividadesController } from '../controllers/atividadesController.js';
 import { makeKanbanController } from '../controllers/kanbanController.js';
 import { makeTranscricaoController } from '../controllers/transcricaoController.js';
+import { makeRelatoriosController } from '../controllers/relatoriosController.js';
 import { createAuthRoutes } from './authRoutes.js';
 import { createAdminRoutes } from './adminRoutes.js';
 import { createOpcoesRoutes } from './opcoesRoutes.js';
 import { createAtividadesRoutes } from './atividadesRoutes.js';
 import { createKanbanRoutes } from './kanbanRoutes.js';
 import { createTranscricaoRoutes } from './transcricaoRoutes.js';
+import { createRelatoriosRoutes } from './relatoriosRoutes.js';
 import legacyRoutes from './legacyRoutes.js';
 
 // Composition root: monta repositories -> use-cases -> controllers -> routers
@@ -68,6 +71,7 @@ export function createRoutes() {
   const editarCard = makeEditarCardUseCase({ kanbanRepository });
   const transcreverAudioParaAtividade = makeTranscreverAudioParaAtividadeUseCase({ openAIGateway, opcoesRepository });
   const transcreverAudioParaCard = makeTranscreverAudioParaCardUseCase({ openAIGateway, opcoesRepository, kanbanRepository });
+  const gerarRelatorioSemanal = makeGerarRelatorioSemanalUseCase({ atividadeRepository, openAIGateway });
 
   const authController = makeAuthController({ autenticarUsuario });
   const adminController = makeAdminController({ criarUsuario, listarUsuarios, excluirUsuario });
@@ -90,6 +94,7 @@ export function createRoutes() {
     transcreverAudioParaAtividade,
     transcreverAudioParaCard
   });
+  const relatoriosController = makeRelatoriosController({ gerarRelatorioSemanal, openAIGateway });
 
   const router = Router();
   router.use(createAuthRoutes({ authController }));
@@ -98,6 +103,7 @@ export function createRoutes() {
   router.use(createAtividadesRoutes({ atividadesController }));
   router.use(createKanbanRoutes({ kanbanController }));
   router.use(createTranscricaoRoutes({ transcricaoController }));
+  router.use(createRelatoriosRoutes({ relatoriosController }));
   router.use(legacyRoutes);
   return router;
 }

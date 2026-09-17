@@ -35,6 +35,14 @@ export function createSupabaseAtividadeRepository({ supabaseAdmin }) {
       let query = supabaseAdmin.from('atividades').delete().eq('id', id);
       if (userId) query = query.eq('user_id', userId);
       return query;
+    },
+
+    // Usada pelos relatorios semanais: mesma query do server.js original
+    // (sem .order(), diferente de listar() acima - preservado verbatim).
+    listarPorSemana(userId, semana) {
+      let query = supabaseAdmin.from('atividades').select('*').eq('semana', semana);
+      if (userId) query = query.eq('user_id', userId);
+      return query;
     }
   };
 }

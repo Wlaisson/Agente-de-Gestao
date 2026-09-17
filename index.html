@@ -1507,6 +1507,7 @@
         import * as atividadesApi from './js/api/atividadesApi.js';
         import * as kanbanApi from './js/api/kanbanApi.js';
         import * as transcricaoApi from './js/api/transcricaoApi.js';
+        import * as relatoriosApi from './js/api/relatoriosApi.js';
 
         installAuthFetchInterceptor({ obterUsuarioLogado, obterSessaoAuth });
 
@@ -4553,14 +4554,7 @@
 
             try {
                 const user = typeof obterUsuarioLogado === 'function' ? obterUsuarioLogado() : null;
-                const res = await fetch('/api/gerar-relatorio', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'x-user-id': user ? user.id : ''
-                    },
-                    body: JSON.stringify({ semana: semanaResumoTexto, userId: user ? user.id : '' })
-                });
+                const res = await relatoriosApi.gerarRelatorioSemanal({ semana: semanaResumoTexto, userId: user ? user.id : '' });
 
                 const data = await res.json();
 
@@ -4698,14 +4692,7 @@
 
             try {
                 const user = typeof obterUsuarioLogado === 'function' ? obterUsuarioLogado() : null;
-                const res = await fetch('/api/gerar-relatorio-reporter', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'x-user-id': user ? user.id : ''
-                    },
-                    body: JSON.stringify({ semana: semanaReporterTexto, userId: user ? user.id : '' })
-                });
+                const res = await relatoriosApi.gerarRelatorioReporter({ semana: semanaReporterTexto, userId: user ? user.id : '' });
 
                 const data = await res.json();
 
