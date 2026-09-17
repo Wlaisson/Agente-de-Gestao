@@ -1511,6 +1511,14 @@
         import * as setupApi from './js/api/setupApi.js';
         import * as reuniaoApi from './js/api/reuniaoApi.js';
         import { state } from './js/state.js';
+        import { calcularSegmentosDonut, construirCirculosSvg } from './js/ui/donutChart.js';
+        import { adicionarMinutosAoCampo } from './js/ui/timeShortcuts.js';
+        import {
+            tempoParaSegundos as helperTempoParaSegundos,
+            segundosParaTempo as formatarSegundosParaTempo,
+            segundosParaDecimal as formatarSegundosParaDecimal,
+            segundosParaTempoSemMeta as helperSegundosParaTempoSemMeta
+        } from './js/domain/tempo.js';
 
         installAuthFetchInterceptor({ obterUsuarioLogado, obterSessaoAuth });
 
@@ -2561,20 +2569,6 @@
             return 0;
         }
 
-        function formatarSegundosParaTempo(totalSeconds) {
-            const hrs = Math.floor(totalSeconds / 3600);
-            const mins = Math.floor((totalSeconds % 3600) / 60);
-            const secs = Math.floor(totalSeconds % 60);
-            const hrsStr = hrs < 10 ? '0' + hrs : hrs.toString();
-            const minsStr = mins < 10 ? '0' + mins : mins.toString();
-            const secsStr = secs < 10 ? '0' + secs : secs.toString();
-            return hrsStr + ':' + minsStr + ':' + secsStr;
-        }
-
-        function formatarSegundosParaDecimal(totalSeconds) {
-            return (totalSeconds / 3600).toFixed(2);
-        }
-
         function definirPeriodoRelatorio(tipo) {
             const hoje = new Date();
             let inicio = new Date(hoje);
@@ -2638,32 +2632,8 @@
             window.print();
         }
 
-        function helperSegundosParaTempo(totalSegundos) {
-            const hrs = Math.floor(totalSegundos / 3600);
-            const mins = Math.floor((totalSegundos % 3600) / 60);
-            const secs = totalSegundos % 60;
-            return `${String(hrs).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
-        }
-
-        function helperTempoParaSegundos(tempoStr) {
-            if (!tempoStr) return 0;
-            const partes = tempoStr.split(':');
-            if (partes.length < 2) return 0;
-            const hrs = parseInt(partes[0], 10) || 0;
-            const mins = parseInt(partes[1], 10) || 0;
-            const secs = partes[2] ? parseInt(partes[2], 10) || 0 : 0;
-            return (hrs * 3600) + (mins * 60) + secs;
-        }
-
         function adicionarMinutos(minutos) {
-            const inputTempo = document.getElementById('tempo');
-            const valorAtual = inputTempo.value.trim();
-            let totalSegundos = 0;
-            if (valorAtual && valorAtual.match(/^\d{2}:\d{2}:\d{2}$/)) {
-                totalSegundos = helperTempoParaSegundos(valorAtual);
-            }
-            totalSegundos += minutos * 60;
-            inputTempo.value = helperSegundosParaTempo(totalSegundos);
+            adicionarMinutosAoCampo('tempo', minutos);
         }
 
         function limparCampoTempo() {
@@ -2671,14 +2641,7 @@
         }
 
         function adicionarMinutosEdicao(minutos) {
-            const inputTempo = document.getElementById('edit-tempo');
-            const valorAtual = inputTempo.value.trim();
-            let totalSegundos = 0;
-            if (valorAtual && valorAtual.match(/^\d{2}:\d{2}:\d{2}$/)) {
-                totalSegundos = helperTempoParaSegundos(valorAtual);
-            }
-            totalSegundos += minutos * 60;
-            inputTempo.value = helperSegundosParaTempo(totalSegundos);
+            adicionarMinutosAoCampo('edit-tempo', minutos);
         }
 
         function limparCampoTempoEdicao() {
@@ -2882,38 +2845,9 @@
             }
 
             const cores = ['#4f46e5', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6', '#06b6d4', '#ef4444', '#14b8a6'];
-            let indexCor = 0;
-            const projsArray = [];
-
-            for (const proj in projetosDados) {
-                const segundos = projetosDados[proj];
-                const pct = (segundos / totalSegundos) * 100;
-                projsArray.push({
-                    nome: proj,
-                    segundos: segundos,
-                    porcentagem: pct,
-                    cor: cores[indexCor % cores.length]
-                });
-                indexCor++;
-            }
-
-            projsArray.sort((a, b) => b.segundos - a.segundos);
-
-            let acumulado = 0;
-            let circlesHTML = '';
             const raio = 42;
-            const C = 2 * Math.PI * raio;
-
-            projsArray.forEach(p => {
-                const dashArray = `${(p.porcentagem / 100) * C} ${C}`;
-                const dashOffset = -((acumulado / 100) * C);
-                circlesHTML += `
-                    <circle cx="60" cy="60" r="${raio}" fill="none" stroke="${p.cor}" stroke-width="12"
-                            stroke-dasharray="${dashArray}" stroke-dashoffset="${dashOffset}"
-                            transform="rotate(-90 60 60)" style="transition: all 0.4s ease;" />
-                `;
-                acumulado += p.porcentagem;
-            });
+            const projsArray = calcularSegmentosDonut(projetosDados, totalSegundos, cores);
+            const circlesHTML = construirCirculosSvg(projsArray, raio, '0.4s');
 
             chartDiv.innerHTML = `
                 <svg width="140" height="140" viewBox="0 0 120 120">
@@ -3597,12 +3531,6 @@
             }
         }
 
-        function helperSegundosParaTempoSemMeta(totalSegundos) {
-            const hrs = Math.floor(totalSegundos / 3600);
-            const mins = Math.floor((totalSegundos % 3600) / 60);
-            return `${String(hrs).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
-        }
-
         function renderizarDonutChart(projetosDados) {
             const chartDiv = document.getElementById('semana-donut-chart-svg');
             const legendDiv = document.getElementById('semana-donut-chart-legend');
@@ -3634,39 +3562,9 @@
                 '#ef4444',
                 '#14b8a6'
             ];
-
-            let indexCor = 0;
-            const projsArray = [];
-            for (const proj in projetosDados) {
-                const segundos = projetosDados[proj];
-                const pct = (segundos / totalSegundos) * 100;
-                projsArray.push({
-                    nome: proj,
-                    segundos: segundos,
-                    porcentagem: pct,
-                    cor: cores[indexCor % cores.length]
-                });
-                indexCor++;
-            }
-
-            projsArray.sort((a, b) => b.segundos - a.segundos);
-
-            let acumulado = 0;
-            let circlesHTML = '';
             const raio = 40;
-            const C = 2 * Math.PI * raio;
-
-            projsArray.forEach(p => {
-                const dashArray = `${(p.porcentagem / 100) * C} ${C}`;
-                const dashOffset = -((acumulado / 100) * C);
-                
-                circlesHTML += `
-                    <circle cx="60" cy="60" r="${raio}" fill="none" stroke="${p.cor}" stroke-width="12"
-                            stroke-dasharray="${dashArray}" stroke-dashoffset="${dashOffset}"
-                            transform="rotate(-90 60 60)" style="transition: all 0.3s ease;" />
-                `;
-                acumulado += p.porcentagem;
-            });
+            const projsArray = calcularSegmentosDonut(projetosDados, totalSegundos, cores);
+            const circlesHTML = construirCirculosSvg(projsArray, raio, '0.3s');
 
             chartDiv.innerHTML = `
                 <svg width="150" height="150" viewBox="0 0 120 120">
@@ -4915,14 +4813,7 @@
         }
 
         function adicionarMinutosConclusao(minutos) {
-            const input = document.getElementById('complete-tempo');
-            const valorAtual = input.value.trim();
-            let totalSegundos = 0;
-            if (valorAtual && valorAtual.match(/^\d{2}:\d{2}:\d{2}$/)) {
-                totalSegundos = helperTempoParaSegundos(valorAtual);
-            }
-            totalSegundos += minutos * 60;
-            input.value = helperSegundosParaTempo(totalSegundos);
+            adicionarMinutosAoCampo('complete-tempo', minutos);
         }
 
         document.getElementById('kanbanCompleteForm').addEventListener('submit', async (e) => {
