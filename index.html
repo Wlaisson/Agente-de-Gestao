@@ -1508,6 +1508,8 @@
         import * as kanbanApi from './js/api/kanbanApi.js';
         import * as transcricaoApi from './js/api/transcricaoApi.js';
         import * as relatoriosApi from './js/api/relatoriosApi.js';
+        import * as setupApi from './js/api/setupApi.js';
+        import * as reuniaoApi from './js/api/reuniaoApi.js';
 
         installAuthFetchInterceptor({ obterUsuarioLogado, obterSessaoAuth });
 
@@ -1770,7 +1772,7 @@
             const logoInput = document.getElementById('setup-logo-url');
 
             try {
-                const res = await fetch(`/api/setup/${user.id}`);
+                const res = await setupApi.obterSetupUsuario(user.id);
                 const data = await res.json();
 
                 if (data.status === 'success') {
@@ -1833,19 +1835,15 @@
             }
 
             try {
-                const res = await fetch('/api/setup', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        userId: user.id,
-                        openai_api_key,
-                        openai_model,
-                        empresa_pdf,
-                        nome_pdf,
-                        descricao_pdf,
-                        contato_pdf,
-                        logo_url
-                    })
+                const res = await setupApi.salvarSetupUsuario({
+                    userId: user.id,
+                    openai_api_key,
+                    openai_model,
+                    empresa_pdf,
+                    nome_pdf,
+                    descricao_pdf,
+                    contato_pdf,
+                    logo_url
                 });
                 const data = await res.json();
 
@@ -3446,16 +3444,12 @@
                 let resumoConcat = '';
 
                 for (const reuniao of reunioes) {
-                    const res = await fetch('/api/processar-reuniao', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            nome_reuniao: reuniao.nome,
-                            data_reuniao: reuniao.data,
-                            transcricao: reuniao.transcricao
-                        })
+                    const res = await reuniaoApi.processarReuniao({
+                        nome_reuniao: reuniao.nome,
+                        data_reuniao: reuniao.data,
+                        transcricao: reuniao.transcricao
                     });
-                    
+
                     const data = await res.json();
                     if (!data.error) {
                         if (data.minhas_tarefas && data.minhas_tarefas.length > 0) {

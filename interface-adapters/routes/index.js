@@ -5,6 +5,7 @@ import { createSupabaseUsuarioRepository } from '../repositories/SupabaseUsuario
 import { createSupabaseOpcoesRepository } from '../repositories/SupabaseOpcoesRepository.js';
 import { createSupabaseAtividadeRepository } from '../repositories/SupabaseAtividadeRepository.js';
 import { createSupabaseKanbanRepository } from '../repositories/SupabaseKanbanRepository.js';
+import { createSupabaseSetupRepository } from '../repositories/SupabaseSetupRepository.js';
 import { createOpenAIGateway } from '../gateways/OpenAIGateway.js';
 import { openaiGlobal, MODELOS } from '../../infrastructure/openai/openaiClient.js';
 import { makeAutenticarUsuarioUseCase } from '../../application/use-cases/auth/AutenticarUsuarioUseCase.js';
@@ -26,6 +27,9 @@ import { makeEditarCardUseCase } from '../../application/use-cases/kanban/Editar
 import { makeTranscreverAudioParaAtividadeUseCase } from '../../application/use-cases/transcricao/TranscreverAudioParaAtividadeUseCase.js';
 import { makeTranscreverAudioParaCardUseCase } from '../../application/use-cases/transcricao/TranscreverAudioParaCardUseCase.js';
 import { makeGerarRelatorioSemanalUseCase } from '../../application/use-cases/relatorios/GerarRelatorioSemanalUseCase.js';
+import { makeObterConfigUsuarioUseCase } from '../../application/use-cases/setup/ObterConfigUsuarioUseCase.js';
+import { makeSalvarConfigUsuarioUseCase } from '../../application/use-cases/setup/SalvarConfigUsuarioUseCase.js';
+import { makeProcessarReuniaoUseCase } from '../../application/use-cases/reuniao/ProcessarReuniaoUseCase.js';
 import { makeAuthController } from '../controllers/authController.js';
 import { makeAdminController } from '../controllers/adminController.js';
 import { makeOpcoesController } from '../controllers/opcoesController.js';
@@ -33,6 +37,8 @@ import { makeAtividadesController } from '../controllers/atividadesController.js
 import { makeKanbanController } from '../controllers/kanbanController.js';
 import { makeTranscricaoController } from '../controllers/transcricaoController.js';
 import { makeRelatoriosController } from '../controllers/relatoriosController.js';
+import { makeSetupController } from '../controllers/setupController.js';
+import { makeReuniaoController } from '../controllers/reuniaoController.js';
 import { createAuthRoutes } from './authRoutes.js';
 import { createAdminRoutes } from './adminRoutes.js';
 import { createOpcoesRoutes } from './opcoesRoutes.js';
@@ -40,17 +46,18 @@ import { createAtividadesRoutes } from './atividadesRoutes.js';
 import { createKanbanRoutes } from './kanbanRoutes.js';
 import { createTranscricaoRoutes } from './transcricaoRoutes.js';
 import { createRelatoriosRoutes } from './relatoriosRoutes.js';
-import legacyRoutes from './legacyRoutes.js';
+import { createSetupRoutes } from './setupRoutes.js';
+import { createReuniaoRoutes } from './reuniaoRoutes.js';
 
 // Composition root: monta repositories -> use-cases -> controllers -> routers
-// para os dominios ja migrados (Auth/Admin), e monta o restante (ainda nao
-// migrado) via legacyRoutes.js. A medida que cada dominio for migrado nas
-// proximas fases, ganha sua propria secao aqui e legacyRoutes.js encolhe.
+// para todos os 9 dominios do backend. legacyRoutes.js (a rede de seguranca
+// temporaria das fases 3-9) foi esvaziado e removido nesta fase.
 export function createRoutes() {
   const usuarioRepository = createSupabaseUsuarioRepository({ supabase, supabaseAdmin });
   const opcoesRepository = createSupabaseOpcoesRepository({ supabaseAdmin });
   const atividadeRepository = createSupabaseAtividadeRepository({ supabaseAdmin });
   const kanbanRepository = createSupabaseKanbanRepository({ supabase });
+  const setupRepository = createSupabaseSetupRepository({ supabaseAdmin });
   const openAIGateway = createOpenAIGateway({ supabaseAdmin, openaiGlobal, modelosPadrao: MODELOS });
 
   const autenticarUsuario = makeAutenticarUsuarioUseCase({ usuarioRepository });
@@ -72,6 +79,9 @@ export function createRoutes() {
   const transcreverAudioParaAtividade = makeTranscreverAudioParaAtividadeUseCase({ openAIGateway, opcoesRepository });
   const transcreverAudioParaCard = makeTranscreverAudioParaCardUseCase({ openAIGateway, opcoesRepository, kanbanRepository });
   const gerarRelatorioSemanal = makeGerarRelatorioSemanalUseCase({ atividadeRepository, openAIGateway });
+  const obterConfigUsuario = makeObterConfigUsuarioUseCase({ setupRepository });
+  const salvarConfigUsuario = makeSalvarConfigUsuarioUseCase({ setupRepository });
+  const processarReuniao = makeProcessarReuniaoUseCase({ openAIGateway });
 
   const authController = makeAuthController({ autenticarUsuario });
   const adminController = makeAdminController({ criarUsuario, listarUsuarios, excluirUsuario });
@@ -95,6 +105,8 @@ export function createRoutes() {
     transcreverAudioParaCard
   });
   const relatoriosController = makeRelatoriosController({ gerarRelatorioSemanal, openAIGateway });
+  const setupController = makeSetupController({ obterConfigUsuario, salvarConfigUsuario });
+  const reuniaoController = makeReuniaoController({ processarReuniao });
 
   const router = Router();
   router.use(createAuthRoutes({ authController }));
@@ -104,6 +116,7 @@ export function createRoutes() {
   router.use(createKanbanRoutes({ kanbanController }));
   router.use(createTranscricaoRoutes({ transcricaoController }));
   router.use(createRelatoriosRoutes({ relatoriosController }));
-  router.use(legacyRoutes);
+  router.use(createSetupRoutes({ setupController }));
+  router.use(createReuniaoRoutes({ reuniaoController }));
   return router;
 }
