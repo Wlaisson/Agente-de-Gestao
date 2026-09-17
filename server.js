@@ -6,34 +6,11 @@ import fs from 'fs';
 import path from 'path';
 import cors from 'cors';
 import { supabase, supabaseAdmin } from './supabaseClient.js';
-async function verificarAdmin(req, res, next) {
-  const userId = req.headers['x-user-id'] || req.headers['user-id'];
-
-  if (!userId) {
-    return res.status(403).json({ error: 'Acesso negado: ID de usuário não fornecido.' });
-  }
-
-  try {
-    const { data: usuario, error } = await supabaseAdmin
-      .from('usuarios')
-      .select('id, is_admin')
-      .eq('id', userId)
-      .single();
-
-    if (error || !usuario || !usuario.is_admin) {
-      return res.status(403).json({ error: 'Acesso negado: Requer privilégios de Administrador.' });
-    }
-
-    req.usuarioAdmin = usuario;
-    next();
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({ error: 'Erro interno na verificação de permissões.' });
-  }
-}
+import { verificarAdmin } from './middleware/verificarAdmin.js';
+import { PORT, WEBHOOK_URL } from './config/env.js';
 
 const app = express();
-const port = 5555;
+const port = PORT;
 const openaiGlobal = process.env.OPENAI_API_KEY
   ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
   : null;
@@ -129,7 +106,6 @@ async function chamarModelo(params, clientOverride, modelosOverride) {
 
 const chamarModeloComFallback = chamarModelo;
 
-const WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbxzPiZ7Dv2aUgT-ues0F8Q9UeSlVScUCJY2DLgyo1DxsTSjD9Lu4_SsaGD1P5gYvrEh_w/exec';
 const OPCOES_FILE = path.join(process.cwd(), 'opcoes_sistema.json');
 
 const OPCOES_DEFAULT = {
