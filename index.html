@@ -1510,6 +1510,7 @@
         import * as relatoriosApi from './js/api/relatoriosApi.js';
         import * as setupApi from './js/api/setupApi.js';
         import * as reuniaoApi from './js/api/reuniaoApi.js';
+        import { state } from './js/state.js';
 
         installAuthFetchInterceptor({ obterUsuarioLogado, obterSessaoAuth });
 
@@ -1730,8 +1731,6 @@
             input.type = input.type === 'password' ? 'text' : 'password';
         }
 
-        let configUsuarioAtual = null;
-
         function aplicarIdentidadeVisualPdf(config) {
             if (!config) return;
             const logoImg = document.getElementById('formal-logo-img');
@@ -1776,7 +1775,7 @@
                 const data = await res.json();
 
                 if (data.status === 'success') {
-                    configUsuarioAtual = data;
+                    state.configUsuarioAtual = data;
                     if (data.configured) {
                         if (descEl) descEl.textContent = `Chave ativa: ${data.apiKeyMasked}`;
                         if (badgeEl) {
@@ -1922,7 +1921,6 @@
 
         const WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbxzPiZ7Dv2aUgT-ues0F8Q9UeSlVScUCJY2DLgyo1DxsTSjD9Lu4_SsaGD1P5gYvrEh_w/exec';
         
-        let todasAtividades = [];
         let offsetSemanaAtual = 0;
         let semanaExibidaTexto = "";
         let offsetSemanaResumo = 0;
@@ -1931,89 +1929,17 @@
         let semanaReporterTexto = "";
         let dadosReporterAtual = null;
 
-        let OPCOES_SISTEMA = {
-            assuntosInternos: [],
-            projetos: [],
-            classificacoes: {}
-        };
         let subtabGerenciarAtual = 'assuntos';
 
-        let MAPA_CLASSIFICACOES = {
-            "Cadastro": [
-                "Avaliação de dados recebidos",
-                "Contato com fabricantes",
-                "Contato com lojista",
-                "Scraping",
-                "Tratamento de SKU",
-                "Tratamento de imagem",
-                "Tratamento de aplicações",
-                "Reunião com cliente",
-                "Reunião sobre Atividade / Projeto",
-                "Consultoria",
-                "Suporte interno"
-            ],
-            "Gerenciamento de projeto": [
-                "Criação de relatório",
-                "Reunião com cliente",
-                "Reunião sobre projeto",
-                "Suporte ao cliente",
-                "Reunião sobre Atividade / Projeto",
-                "Consultoria",
-                "Suporte interno"
-            ],
-            "Infraestrutura": [
-                "Categorias",
-                "Base de veículos",
-                "Cadastro de fabricantes",
-                "Reunião com cliente",
-                "Reunião sobre Atividade / Projeto",
-                "Consultoria",
-                "Suporte interno"
-            ],
-            "Matching": [
-                "Cadastro de sinônimos de nome de fabricante ou código de peça",
-                "Reunião com cliente",
-                "Reunião sobre Atividade / Projeto",
-                "Consultoria",
-                "Suporte interno"
-            ],
-            "Qualidade": [
-                "Personalização de cadastro",
-                "Correção de cadastro errado (Recebemos a informação correta e erramos na manipulação)",
-                "Reunião com cliente",
-                "Reunião sobre Atividade / Projeto",
-                "Consultoria",
-                "Suporte interno"
-            ],
-            "Orçamento": [
-                "Orçamento"
-            ],
-            "Reunião que não é sobre a atividade [Projeto deve ser interno]": [
-                "Reunião interna"
-            ],
-            "Gestão de pessoas": [
-                "Contratação / Feedback / Estratégia do dpto e etc",
-                "Grestão de equipe, tarefas e demandas"
-            ],
-            "Scraping": [
-                "Scraping"
-            ],
-            "Sugestão e/ou Curadoria de Mídias CdP": [
-                "Sugestão e/ou Curadoria de Mídias CdP"
-            ],
-            "Automação": [
-                "Scraping",
-                "Tratamento de Vista Explodida"
-            ]
-        };
+
 
         async function carregarOpcoesSistema(forcarAviso = false) {
             try {
                 const json = await opcoesApi.obterOpcoes();
                 if (json && json.status === 'success' && json.data) {
-                    OPCOES_SISTEMA = json.data;
-                    if (OPCOES_SISTEMA.classificacoes && Object.keys(OPCOES_SISTEMA.classificacoes).length > 0) {
-                        MAPA_CLASSIFICACOES = OPCOES_SISTEMA.classificacoes;
+                    state.OPCOES_SISTEMA = json.data;
+                    if (state.OPCOES_SISTEMA.classificacoes && Object.keys(state.OPCOES_SISTEMA.classificacoes).length > 0) {
+                        state.MAPA_CLASSIFICACOES = state.OPCOES_SISTEMA.classificacoes;
                     }
                     popularTodosSelects();
                     renderizarPainelGerenciar();
@@ -2034,9 +1960,9 @@
             const contAss = document.getElementById('cont-assuntos');
             const contProj = document.getElementById('cont-projetos');
             const contClass = document.getElementById('cont-classificacoes');
-            if (contAss) contAss.textContent = (OPCOES_SISTEMA.assuntosInternos || []).length;
-            if (contProj) contProj.textContent = (OPCOES_SISTEMA.projetos || []).length;
-            if (contClass) contClass.textContent = Object.keys(OPCOES_SISTEMA.classificacoes || {}).length;
+            if (contAss) contAss.textContent = (state.OPCOES_SISTEMA.assuntosInternos || []).length;
+            if (contProj) contProj.textContent = (state.OPCOES_SISTEMA.projetos || []).length;
+            if (contClass) contClass.textContent = Object.keys(state.OPCOES_SISTEMA.classificacoes || {}).length;
         }
 
         function popularTodosSelects() {
@@ -2046,11 +1972,11 @@
                 if (!el) return;
                 const valAtual = el.value;
                 let html = (id === 'camp-projeto' || id === 'projeto') ? '<option value="">Selecione o Projeto...</option>' : '<option value="">Selecione...</option>';
-                (OPCOES_SISTEMA.projetos || []).forEach(p => {
+                (state.OPCOES_SISTEMA.projetos || []).forEach(p => {
                     html += `<option value="${p}">${p}</option>`;
                 });
                 el.innerHTML = html;
-                if (valAtual && (OPCOES_SISTEMA.projetos || []).includes(valAtual)) {
+                if (valAtual && (state.OPCOES_SISTEMA.projetos || []).includes(valAtual)) {
                     el.value = valAtual;
                 }
             });
@@ -2061,11 +1987,11 @@
                 if (!el) return;
                 const valAtual = el.value;
                 let html = '<option value="">Selecione o Assunto...</option>';
-                (OPCOES_SISTEMA.assuntosInternos || []).forEach(a => {
+                (state.OPCOES_SISTEMA.assuntosInternos || []).forEach(a => {
                     html += `<option value="${a}">${a}</option>`;
                 });
                 el.innerHTML = html;
-                if (valAtual && (OPCOES_SISTEMA.assuntosInternos || []).includes(valAtual)) {
+                if (valAtual && (state.OPCOES_SISTEMA.assuntosInternos || []).includes(valAtual)) {
                     el.value = valAtual;
                 }
             });
@@ -2112,7 +2038,7 @@
             const container = document.getElementById('lista-assuntos-container');
             if (!container) return;
             const filtro = (document.getElementById('filtro-assuntos') ? document.getElementById('filtro-assuntos').value : '').toLowerCase().trim();
-            const lista = (OPCOES_SISTEMA.assuntosInternos || []).filter(a => a.toLowerCase().includes(filtro));
+            const lista = (state.OPCOES_SISTEMA.assuntosInternos || []).filter(a => a.toLowerCase().includes(filtro));
             if (lista.length === 0) {
                 container.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 2rem;">Nenhum assunto encontrado.</div>';
                 return;
@@ -2136,7 +2062,7 @@
             try {
                 const json = await opcoesApi.adicionarAssunto(valor);
                 if (json.status === 'success') {
-                    OPCOES_SISTEMA = json.data;
+                    state.OPCOES_SISTEMA = json.data;
                     input.value = '';
                     popularTodosSelects();
                     renderizarListaAssuntos();
@@ -2155,7 +2081,7 @@
             try {
                 const json = await opcoesApi.editarAssunto(antigo, novo.trim());
                 if (json.status === 'success') {
-                    OPCOES_SISTEMA = json.data;
+                    state.OPCOES_SISTEMA = json.data;
                     popularTodosSelects();
                     renderizarListaAssuntos();
                     mostrarToast('Assunto atualizado!', 'success');
@@ -2171,7 +2097,7 @@
             try {
                 const json = await opcoesApi.excluirAssunto(item);
                 if (json.status === 'success') {
-                    OPCOES_SISTEMA = json.data;
+                    state.OPCOES_SISTEMA = json.data;
                     popularTodosSelects();
                     renderizarListaAssuntos();
                     atualizarContadoresGerenciar();
@@ -2184,12 +2110,12 @@
         }
 
         async function importarAssuntosDoHistorico() {
-            if (!todasAtividades || todasAtividades.length === 0) {
+            if (!state.todasAtividades || state.todasAtividades.length === 0) {
                 mostrarToast('Nenhuma atividade carregada para importar.', 'warning');
                 return;
             }
-            const doHistorico = [...new Set(todasAtividades.map(a => (a.assuntoInterno || '').trim()).filter(a => a && a !== '-' && a !== 'Sem Assunto'))];
-            const novos = doHistorico.filter(a => !(OPCOES_SISTEMA.assuntosInternos || []).includes(a));
+            const doHistorico = [...new Set(state.todasAtividades.map(a => (a.assuntoInterno || '').trim()).filter(a => a && a !== '-' && a !== 'Sem Assunto'))];
+            const novos = doHistorico.filter(a => !(state.OPCOES_SISTEMA.assuntosInternos || []).includes(a));
             if (novos.length === 0) {
                 mostrarToast('Todos os assuntos das atividades já estão cadastrados!', 'info');
                 return;
@@ -2197,14 +2123,14 @@
             const confirmou = confirm(`Foram encontrados ${novos.length} novos assuntos no histórico:\n\n${novos.slice(0, 10).join(', ')}${novos.length > 10 ? '...' : ''}\n\nDeseja adicioná-los à lista oficial?`);
             if (!confirmou) return;
 
-            const novaLista = [...(OPCOES_SISTEMA.assuntosInternos || []), ...novos];
-            const clone = JSON.parse(JSON.stringify(OPCOES_SISTEMA));
+            const novaLista = [...(state.OPCOES_SISTEMA.assuntosInternos || []), ...novos];
+            const clone = JSON.parse(JSON.stringify(state.OPCOES_SISTEMA));
             clone.assuntosInternos = novaLista;
 
             try {
                 const json = await opcoesApi.salvarTudo(clone);
                 if (json.status === 'success') {
-                    OPCOES_SISTEMA = json.data;
+                    state.OPCOES_SISTEMA = json.data;
                     popularTodosSelects();
                     renderizarListaAssuntos();
                     atualizarContadoresGerenciar();
@@ -2220,7 +2146,7 @@
             const container = document.getElementById('lista-projetos-container');
             if (!container) return;
             const filtro = (document.getElementById('filtro-projetos') ? document.getElementById('filtro-projetos').value : '').toLowerCase().trim();
-            const lista = (OPCOES_SISTEMA.projetos || []).filter(p => p.toLowerCase().includes(filtro));
+            const lista = (state.OPCOES_SISTEMA.projetos || []).filter(p => p.toLowerCase().includes(filtro));
             if (lista.length === 0) {
                 container.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 2rem;">Nenhum projeto encontrado.</div>';
                 return;
@@ -2244,7 +2170,7 @@
             try {
                 const json = await opcoesApi.adicionarProjeto(valor);
                 if (json.status === 'success') {
-                    OPCOES_SISTEMA = json.data;
+                    state.OPCOES_SISTEMA = json.data;
                     input.value = '';
                     popularTodosSelects();
                     renderizarListaProjetos();
@@ -2263,7 +2189,7 @@
             try {
                 const json = await opcoesApi.editarProjeto(antigo, novo.trim());
                 if (json.status === 'success') {
-                    OPCOES_SISTEMA = json.data;
+                    state.OPCOES_SISTEMA = json.data;
                     popularTodosSelects();
                     renderizarListaProjetos();
                     mostrarToast('Projeto atualizado!', 'success');
@@ -2279,7 +2205,7 @@
             try {
                 const json = await opcoesApi.excluirProjeto(item);
                 if (json.status === 'success') {
-                    OPCOES_SISTEMA = json.data;
+                    state.OPCOES_SISTEMA = json.data;
                     popularTodosSelects();
                     renderizarListaProjetos();
                     atualizarContadoresGerenciar();
@@ -2294,7 +2220,7 @@
         function renderizarListaClassificacoes() {
             const container = document.getElementById('lista-classificacoes-container');
             if (!container) return;
-            const classMap = OPCOES_SISTEMA.classificacoes || {};
+            const classMap = state.OPCOES_SISTEMA.classificacoes || {};
             const keys = Object.keys(classMap);
             if (keys.length === 0) {
                 container.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 2rem;">Nenhuma classificação cadastrada.</div>';
@@ -2338,8 +2264,8 @@
             try {
                 const json = await opcoesApi.adicionarClass1(valor);
                 if (json.status === 'success') {
-                    OPCOES_SISTEMA = json.data;
-                    MAPA_CLASSIFICACOES = OPCOES_SISTEMA.classificacoes;
+                    state.OPCOES_SISTEMA = json.data;
+                    state.MAPA_CLASSIFICACOES = state.OPCOES_SISTEMA.classificacoes;
                     input.value = '';
                     popularTodosSelects();
                     renderizarListaClassificacoes();
@@ -2358,8 +2284,8 @@
             try {
                 const json = await opcoesApi.editarClass1(antigo, novo.trim());
                 if (json.status === 'success') {
-                    OPCOES_SISTEMA = json.data;
-                    MAPA_CLASSIFICACOES = OPCOES_SISTEMA.classificacoes;
+                    state.OPCOES_SISTEMA = json.data;
+                    state.MAPA_CLASSIFICACOES = state.OPCOES_SISTEMA.classificacoes;
                     popularTodosSelects();
                     renderizarListaClassificacoes();
                     mostrarToast('Categoria atualizada!', 'success');
@@ -2375,8 +2301,8 @@
             try {
                 const json = await opcoesApi.excluirClass1(item);
                 if (json.status === 'success') {
-                    OPCOES_SISTEMA = json.data;
-                    MAPA_CLASSIFICACOES = OPCOES_SISTEMA.classificacoes;
+                    state.OPCOES_SISTEMA = json.data;
+                    state.MAPA_CLASSIFICACOES = state.OPCOES_SISTEMA.classificacoes;
                     popularTodosSelects();
                     renderizarListaClassificacoes();
                     atualizarContadoresGerenciar();
@@ -2396,8 +2322,8 @@
             try {
                 const json = await opcoesApi.adicionarClass2(c1, valor);
                 if (json.status === 'success') {
-                    OPCOES_SISTEMA = json.data;
-                    MAPA_CLASSIFICACOES = OPCOES_SISTEMA.classificacoes;
+                    state.OPCOES_SISTEMA = json.data;
+                    state.MAPA_CLASSIFICACOES = state.OPCOES_SISTEMA.classificacoes;
                     input.value = '';
                     popularTodosSelects();
                     renderizarListaClassificacoes();
@@ -2413,8 +2339,8 @@
             try {
                 const json = await opcoesApi.excluirClass2(c1, c2);
                 if (json.status === 'success') {
-                    OPCOES_SISTEMA = json.data;
-                    MAPA_CLASSIFICACOES = OPCOES_SISTEMA.classificacoes;
+                    state.OPCOES_SISTEMA = json.data;
+                    state.MAPA_CLASSIFICACOES = state.OPCOES_SISTEMA.classificacoes;
                     popularTodosSelects();
                     renderizarListaClassificacoes();
                     mostrarToast('Subclassificação removida!', 'info');
@@ -2448,11 +2374,11 @@
             if (!s1 || !s2) return;
 
             let html1 = '<option value="">Selecione...</option>';
-            for (const n1 of Object.keys(MAPA_CLASSIFICACOES)) {
+            for (const n1 of Object.keys(state.MAPA_CLASSIFICACOES)) {
                 html1 += `<option value="${n1}">${n1}</option>`;
             }
             s1.innerHTML = html1;
-            if (valor1 && MAPA_CLASSIFICACOES[valor1]) {
+            if (valor1 && state.MAPA_CLASSIFICACOES[valor1]) {
                 s1.value = valor1;
             } else {
                 s1.value = '';
@@ -2467,7 +2393,7 @@
             if (!s1 || !s2) return;
 
             const n1 = s1.value;
-            const opcoes = MAPA_CLASSIFICACOES[n1] || [];
+            const opcoes = state.MAPA_CLASSIFICACOES[n1] || [];
             let html2 = '<option value="">Selecione...</option>';
             opcoes.forEach(n2 => {
                 html2 += `<option value="${n2}">${n2}</option>`;
@@ -2483,10 +2409,10 @@
         }
 
         function obterAssuntosSemana() {
-            const daSemana = todasAtividades
+            const daSemana = state.todasAtividades
                 .filter(a => a.semana === semanaExibidaTexto && a.assuntoInterno && a.assuntoInterno.trim() !== '' && a.assuntoInterno !== '-')
                 .map(a => a.assuntoInterno.trim());
-            const todos = todasAtividades
+            const todos = state.todasAtividades
                 .filter(a => a.assuntoInterno && a.assuntoInterno.trim() !== '' && a.assuntoInterno !== '-')
                 .map(a => a.assuntoInterno.trim());
             return [...new Set([...daSemana, ...todos])];
@@ -2699,8 +2625,8 @@
 
             if (typeof OPCOES_CACHE !== 'undefined' && OPCOES_CACHE.projetos && OPCOES_CACHE.projetos.length > 0) {
                 projetosList = [...OPCOES_CACHE.projetos];
-            } else if (typeof todasAtividades !== 'undefined' && todasAtividades.length > 0) {
-                projetosList = [...new Set(todasAtividades.map(a => a.projeto).filter(Boolean))];
+            } else if (typeof state.todasAtividades !== 'undefined' && state.todasAtividades.length > 0) {
+                projetosList = [...new Set(state.todasAtividades.map(a => a.projeto).filter(Boolean))];
             }
 
             select.innerHTML = '<option value="">Todos os Projetos</option>' + 
@@ -2769,7 +2695,6 @@
             mostrarToast('Dados da atividade frequente preenchidos!', 'info');
         }
 
-        let campanhasDados = [];
         let filtroCampanhaAtual = 'Todas';
 
         function switchTab(tabId) {
@@ -2842,7 +2767,7 @@
                 topbarSemana.textContent = `Semana: ${textoSemana}`;
             }
 
-            const atividadesSemana = todasAtividades.filter(act => act.semana === textoSemana);
+            const atividadesSemana = state.todasAtividades.filter(act => act.semana === textoSemana);
 
             let totalSegundos = 0;
             const projetosDados = {};
@@ -2884,7 +2809,7 @@
                 }
             }
 
-            const cards = (typeof kanbanCards !== 'undefined' && Array.isArray(kanbanCards)) ? kanbanCards : [];
+            const cards = (typeof state.kanbanCards !== 'undefined' && Array.isArray(state.kanbanCards)) ? state.kanbanCards : [];
             const afazer = cards.filter(c => (c.status || 'A Fazer') === 'A Fazer').length;
             const andamento = cards.filter(c => c.status === 'Em Andamento').length;
             const concluidas = cards.filter(c => c.status === 'Concluído').length;
@@ -3055,9 +2980,9 @@
             try {
                 const gravadas = localStorage.getItem('gestao_campanhas');
                 if (gravadas) {
-                    campanhasDados = JSON.parse(gravadas);
+                    state.campanhasDados = JSON.parse(gravadas);
                 } else {
-                    campanhasDados = [
+                    state.campanhasDados = [
                         {
                             id: 'CMP-1',
                             nome: 'Estruturação da Base de Fabricantes Viamar',
@@ -3092,16 +3017,16 @@
                             descricao: 'Tratamento de vistas explodidas para peças do catálogo industrial.'
                         }
                     ];
-                    localStorage.setItem('gestao_campanhas', JSON.stringify(campanhasDados));
+                    localStorage.setItem('gestao_campanhas', JSON.stringify(state.campanhasDados));
                 }
             } catch (e) {
-                campanhasDados = [];
+                state.campanhasDados = [];
             }
-            return campanhasDados;
+            return state.campanhasDados;
         }
 
         function salvarCampanhasLocais() {
-            localStorage.setItem('gestao_campanhas', JSON.stringify(campanhasDados));
+            localStorage.setItem('gestao_campanhas', JSON.stringify(state.campanhasDados));
             renderizarCampanhas(filtroCampanhaAtual);
             atualizarHomeDashboard();
         }
@@ -3110,11 +3035,11 @@
             filtroCampanhaAtual = filtro;
             carregarCampanhas();
 
-            const total = campanhasDados.length;
-            const ativas = campanhasDados.filter(c => c.status === 'Ativa').length;
-            const programadas = campanhasDados.filter(c => c.status === 'Programada').length;
-            const concluidas = campanhasDados.filter(c => c.status === 'Concluída').length;
-            const pausadas = campanhasDados.filter(c => c.status === 'Pausada').length;
+            const total = state.campanhasDados.length;
+            const ativas = state.campanhasDados.filter(c => c.status === 'Ativa').length;
+            const programadas = state.campanhasDados.filter(c => c.status === 'Programada').length;
+            const concluidas = state.campanhasDados.filter(c => c.status === 'Concluída').length;
+            const pausadas = state.campanhasDados.filter(c => c.status === 'Pausada').length;
 
             const elTotal = document.getElementById('camp-total');
             const elAtivas = document.getElementById('camp-ativas');
@@ -3139,7 +3064,7 @@
             const container = document.getElementById('campanhas-container');
             if (!container) return;
 
-            const filtradas = filtro === 'Todas' ? campanhasDados : campanhasDados.filter(c => c.status === filtro);
+            const filtradas = filtro === 'Todas' ? state.campanhasDados : state.campanhasDados.filter(c => c.status === filtro);
 
             if (filtradas.length === 0) {
                 container.innerHTML = `
@@ -3219,7 +3144,7 @@
             form.reset();
 
             if (id) {
-                const camp = campanhasDados.find(c => c.id === id);
+                const camp = state.campanhasDados.find(c => c.id === id);
                 if (camp) {
                     title.textContent = 'Editar Campanha';
                     document.getElementById('camp-id').value = camp.id;
@@ -3268,14 +3193,14 @@
             }
 
             if (id) {
-                const idx = campanhasDados.findIndex(c => c.id === id);
+                const idx = state.campanhasDados.findIndex(c => c.id === id);
                 if (idx !== -1) {
-                    campanhasDados[idx] = { ...campanhasDados[idx], nome, projeto, status, dataInicio, dataFim, metaHoras, progresso, descricao };
+                    state.campanhasDados[idx] = { ...state.campanhasDados[idx], nome, projeto, status, dataInicio, dataFim, metaHoras, progresso, descricao };
                     mostrarToast('Campanha atualizada com sucesso!', 'success');
                 }
             } else {
                 const novoId = 'CMP-' + Date.now();
-                campanhasDados.unshift({ id: novoId, nome, projeto, status, dataInicio, dataFim, metaHoras, progresso, descricao });
+                state.campanhasDados.unshift({ id: novoId, nome, projeto, status, dataInicio, dataFim, metaHoras, progresso, descricao });
                 mostrarToast('Campanha criada com sucesso!', 'success');
             }
 
@@ -3285,7 +3210,7 @@
 
         function excluirCampanha(id) {
             if (!confirm('Tem certeza que deseja excluir esta campanha?')) return;
-            campanhasDados = campanhasDados.filter(c => c.id !== id);
+            state.campanhasDados = state.campanhasDados.filter(c => c.id !== id);
             salvarCampanhasLocais();
             mostrarToast('Campanha removida.', 'info');
         }
@@ -3587,7 +3512,7 @@
                     if (resDb.ok) {
                         const resultDb = await resDb.json();
                         if (resultDb && resultDb.status === 'success' && Array.isArray(resultDb.data)) {
-                            todasAtividades = resultDb.data.map(item => {
+                            state.todasAtividades = resultDb.data.map(item => {
                                 let sem = item.semana;
                                 if (!sem || sem.trim() === '') {
                                     try {
@@ -3633,7 +3558,7 @@
                     const res = await fetch(`${WEBHOOK_URL}?action=list`);
                     const result = await res.json();
                     if (result && result.status === 'success' && Array.isArray(result.data)) {
-                        todasAtividades = result.data.map(item => ({
+                        state.todasAtividades = result.data.map(item => ({
                             id: item.row ? `SHEET-${item.row}` : (item.id || `SHEET-${Date.now()}`),
                             row: item.row,
                             colaborador: item.colaborador,
@@ -3658,7 +3583,7 @@
                 }
             }
 
-            todasAtividades = [];
+            state.todasAtividades = [];
             renderizarAtividadesSemana();
             if (tbody) {
                 tbody.innerHTML = `
@@ -3771,7 +3696,7 @@
 
         function renderizarAtividadesSemana() {
             const tbody = document.getElementById('tabela-atividades-semana');
-            const filtradas = todasAtividades.filter(act => act.semana === semanaExibidaTexto);
+            const filtradas = state.todasAtividades.filter(act => act.semana === semanaExibidaTexto);
             const contadorEl = document.getElementById('contador-linhas-semana');
             const metaTotalEl = document.getElementById('meta-total-atividades-texto');
 
@@ -3855,7 +3780,7 @@
         }
 
         function duplicarAtividade(idOuRow) {
-            const act = todasAtividades.find(item => String(item.id) === String(idOuRow) || String(item.row) === String(idOuRow));
+            const act = state.todasAtividades.find(item => String(item.id) === String(idOuRow) || String(item.row) === String(idOuRow));
             if (!act) return;
             document.getElementById('projeto').value = act.projeto;
             document.getElementById('assuntoInterno').value = act.assuntoInterno || '';
@@ -3878,7 +3803,7 @@
         }
 
         function abrirEdicao(idOuRow) {
-            const act = todasAtividades.find(item => String(item.id) === String(idOuRow) || String(item.row) === String(idOuRow));
+            const act = state.todasAtividades.find(item => String(item.id) === String(idOuRow) || String(item.row) === String(idOuRow));
             if (!act) return;
 
             document.getElementById('edit-id').value = act.id || act.row || '';
@@ -3903,7 +3828,7 @@
             if (!confirm('Deseja realmente excluir esta atividade?')) return;
             try {
                 const user = typeof obterUsuarioLogado === 'function' ? obterUsuarioLogado() : null;
-                const act = todasAtividades.find(item => String(item.id) === String(idOuRow) || String(item.row) === String(idOuRow));
+                const act = state.todasAtividades.find(item => String(item.id) === String(idOuRow) || String(item.row) === String(idOuRow));
                 const atvId = (act && act.id) ? act.id : idOuRow;
 
                 const res = await atividadesApi.excluirAtividade(atvId);
@@ -4089,8 +4014,8 @@
                         formData.append('userId', user.id);
                     }
 
-                    if (typeof todasAtividades !== 'undefined' && todasAtividades.length > 0) {
-                        const assuntos = [...new Set(todasAtividades.map(a => a.assuntoInterno).filter(a => a && a.trim() !== 'Sem Assunto' && a.trim() !== ''))];
+                    if (typeof state.todasAtividades !== 'undefined' && state.todasAtividades.length > 0) {
+                        const assuntos = [...new Set(state.todasAtividades.map(a => a.assuntoInterno).filter(a => a && a.trim() !== 'Sem Assunto' && a.trim() !== ''))];
                         if (assuntos.length > 0) {
                             formData.append('assuntosCache', JSON.stringify(assuntos));
                         }
@@ -4171,8 +4096,8 @@
             let segsHoje = 0;
             let ativsHojeCount = 0;
 
-            if (Array.isArray(todasAtividades)) {
-                todasAtividades.forEach(act => {
+            if (Array.isArray(state.todasAtividades)) {
+                state.todasAtividades.forEach(act => {
                     const d = typeof helperNormalizarData === 'function' ? helperNormalizarData(act.data) : act.data;
                     if (d === hoje) {
                         ativsHojeCount++;
@@ -4347,8 +4272,8 @@
                     }
                 }
 
-                if (listaAtividades.length === 0 && typeof todasAtividades !== 'undefined' && todasAtividades.length > 0) {
-                    listaAtividades = todasAtividades.filter(item => {
+                if (listaAtividades.length === 0 && typeof state.todasAtividades !== 'undefined' && state.todasAtividades.length > 0) {
+                    listaAtividades = state.todasAtividades.filter(item => {
                         const d = helperNormalizarData(item.data);
                         return d >= inicio && d <= fim;
                     });
@@ -4483,7 +4408,7 @@
                 document.getElementById('formal-table-tbody').innerHTML = itemsHtml;
                 document.getElementById('formal-table-total-horas').textContent = totalFormatado;
 
-                aplicarIdentidadeVisualPdf(configUsuarioAtual);
+                aplicarIdentidadeVisualPdf(state.configUsuarioAtual);
                 relatorioDiv.style.display = 'block';
                 btnPdf.disabled = false;
                 mostrarToast('Relatório formal de horas apurado com sucesso!', 'success');
@@ -4799,7 +4724,6 @@
             });
         }
 
-        let kanbanCards = [];
         let kanbanRecorder = null;
         let kanbanAudioChunks = [];
         let kanbanIsRecording = false;
@@ -4809,7 +4733,7 @@
                 const res = await kanbanApi.listarCards();
                 const result = await res.json();
                 if (result.status === 'success' && Array.isArray(result.data)) {
-                    kanbanCards = result.data;
+                    state.kanbanCards = result.data;
                     renderizarKanban();
                     return;
                 }
@@ -4821,7 +4745,7 @@
                     const res = await fetch(`${WEBHOOK_URL}?action=list_kanban`);
                     const result = await res.json();
                     if (result.status === 'success' && Array.isArray(result.data)) {
-                        kanbanCards = result.data;
+                        state.kanbanCards = result.data;
                         renderizarKanban();
                     }
                 } catch (e) {
@@ -4840,8 +4764,8 @@
 
             let cTodo = 0, cProg = 0, cDone = 0;
 
-            const ativos = kanbanCards.filter(c => c.status !== 'Concluído');
-            const concluidos = kanbanCards.filter(c => c.status === 'Concluído').slice(-10).reverse();
+            const ativos = state.kanbanCards.filter(c => c.status !== 'Concluído');
+            const concluidos = state.kanbanCards.filter(c => c.status === 'Concluído').slice(-10).reverse();
             const renderList = [...ativos, ...concluidos];
 
             renderList.forEach(card => {
@@ -4950,7 +4874,7 @@
         }
 
         async function moverCard(id, novoStatus) {
-            const card = kanbanCards.find(c => c.id === id);
+            const card = state.kanbanCards.find(c => c.id === id);
             if (card) {
                 card.status = novoStatus;
                 renderizarKanban();
@@ -4972,7 +4896,7 @@
         }
 
         function iniciarConclusao(cardId) {
-            const card = kanbanCards.find(c => c.id === cardId);
+            const card = state.kanbanCards.find(c => c.id === cardId);
             if (!card) return;
             document.getElementById('complete-card-id').value = cardId;
             document.getElementById('complete-card-titulo').textContent = card.titulo;
@@ -5013,7 +4937,7 @@
             btn.innerHTML = '<span class="btn-spinner"></span> Salvando...';
             btn.disabled = true;
 
-            const card = kanbanCards.find(c => c.id === cardId);
+            const card = state.kanbanCards.find(c => c.id === cardId);
             if (card) {
                 card.status = 'Concluído';
                 card.tempo = tempo;
@@ -5040,7 +4964,7 @@
             };
 
             const novaAtividadeLocal = {
-                row: (todasAtividades.length > 0 ? Math.max(...todasAtividades.map(a => a.row || 0)) + 1 : 2),
+                row: (state.todasAtividades.length > 0 ? Math.max(...state.todasAtividades.map(a => a.row || 0)) + 1 : 2),
                 colaborador: payloadAtividade["Colaborador"],
                 data: payloadAtividade["Data"],
                 diaSemana: payloadAtividade["Dia da semana"],
@@ -5055,7 +4979,7 @@
                 classNivel2: payloadAtividade["Classificação nivel 2"]
             };
 
-            todasAtividades.unshift(novaAtividadeLocal);
+            state.todasAtividades.unshift(novaAtividadeLocal);
             renderizarAtividadesSemana();
             atualizarDatalistAssuntos();
             fecharModalConclusao();
@@ -5106,7 +5030,7 @@
 
         async function excluirCard(id) {
             if (!confirm('Deseja excluir esta tarefa?')) return;
-            kanbanCards = kanbanCards.filter(c => c.id !== id);
+            state.kanbanCards = state.kanbanCards.filter(c => c.id !== id);
             renderizarKanban();
             mostrarToast('Tarefa excluída.', 'info');
             try {
@@ -5175,7 +5099,7 @@
                     }).catch(wErr => console.error(wErr));
                 }
 
-                kanbanCards.unshift({
+                state.kanbanCards.unshift({
                     id: cardId,
                     titulo: payload.titulo,
                     descricao: payload.descricao,
@@ -5200,7 +5124,7 @@
         });
 
         function abrirModalEditarTarefa(cardId) {
-            const card = kanbanCards.find(c => c.id === cardId);
+            const card = state.kanbanCards.find(c => c.id === cardId);
             if (!card) return;
             document.getElementById('kanban-edit-id').value = card.id;
             document.getElementById('kanban-edit-titulo').value = card.titulo || '';
@@ -5241,7 +5165,7 @@
                 prazo: document.getElementById('kanban-edit-prazo').value
             };
 
-            const card = kanbanCards.find(c => c.id === id);
+            const card = state.kanbanCards.find(c => c.id === id);
             if (card) {
                 card.titulo = payload.titulo;
                 card.descricao = payload.descricao;
@@ -5332,7 +5256,7 @@
                                         dataCriacao: t.dataCriacao || new Date().toISOString().split('T')[0],
                                         prazo: t.prazo || ''
                                     };
-                                    kanbanCards.unshift(novoCard);
+                                    state.kanbanCards.unshift(novoCard);
                                 });
                                 renderizarKanban();
                                 mostrarToast(`${data.tarefas.length} tarefa(s) adicionada(s) em "A Fazer"!`, 'success');
