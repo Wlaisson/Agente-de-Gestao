@@ -1503,6 +1503,7 @@
         import { installAuthFetchInterceptor } from './js/api/httpClient.js';
         import { TAB_TITULOS, toggleSidebar } from './js/ui/sidebar.js';
         import { createAdminUsersModule } from './js/features/admin-users.js';
+        import * as opcoesApi from './js/api/opcoesApi.js';
 
         installAuthFetchInterceptor({ obterUsuarioLogado, obterSessaoAuth });
 
@@ -2006,8 +2007,7 @@
 
         async function carregarOpcoesSistema(forcarAviso = false) {
             try {
-                const res = await fetch('/api/opcoes');
-                const json = await res.json();
+                const json = await opcoesApi.obterOpcoes();
                 if (json && json.status === 'success' && json.data) {
                     OPCOES_SISTEMA = json.data;
                     if (OPCOES_SISTEMA.classificacoes && Object.keys(OPCOES_SISTEMA.classificacoes).length > 0) {
@@ -2132,12 +2132,7 @@
             const valor = input ? input.value.trim() : '';
             if (!valor) return;
             try {
-                const res = await fetch('/api/opcoes', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: 'adicionar_assunto', item: valor })
-                });
-                const json = await res.json();
+                const json = await opcoesApi.adicionarAssunto(valor);
                 if (json.status === 'success') {
                     OPCOES_SISTEMA = json.data;
                     input.value = '';
@@ -2156,12 +2151,7 @@
             const novo = prompt('Editar nome do assunto interno:', antigo);
             if (!novo || novo.trim() === '' || novo.trim() === antigo) return;
             try {
-                const res = await fetch('/api/opcoes', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: 'editar_assunto', antigo: antigo, novo: novo.trim() })
-                });
-                const json = await res.json();
+                const json = await opcoesApi.editarAssunto(antigo, novo.trim());
                 if (json.status === 'success') {
                     OPCOES_SISTEMA = json.data;
                     popularTodosSelects();
@@ -2177,12 +2167,7 @@
         async function excluirAssuntoInterno(item) {
             if (!confirm(`Deseja realmente excluir o assunto "${item}"?`)) return;
             try {
-                const res = await fetch('/api/opcoes', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: 'excluir_assunto', item: item })
-                });
-                const json = await res.json();
+                const json = await opcoesApi.excluirAssunto(item);
                 if (json.status === 'success') {
                     OPCOES_SISTEMA = json.data;
                     popularTodosSelects();
@@ -2215,12 +2200,7 @@
             clone.assuntosInternos = novaLista;
 
             try {
-                const res = await fetch('/api/opcoes', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: 'salvar_tudo', dados: clone })
-                });
-                const json = await res.json();
+                const json = await opcoesApi.salvarTudo(clone);
                 if (json.status === 'success') {
                     OPCOES_SISTEMA = json.data;
                     popularTodosSelects();
@@ -2260,12 +2240,7 @@
             const valor = input ? input.value.trim() : '';
             if (!valor) return;
             try {
-                const res = await fetch('/api/opcoes', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: 'adicionar_projeto', item: valor })
-                });
-                const json = await res.json();
+                const json = await opcoesApi.adicionarProjeto(valor);
                 if (json.status === 'success') {
                     OPCOES_SISTEMA = json.data;
                     input.value = '';
@@ -2284,12 +2259,7 @@
             const novo = prompt('Editar nome do projeto:', antigo);
             if (!novo || novo.trim() === '' || novo.trim() === antigo) return;
             try {
-                const res = await fetch('/api/opcoes', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: 'editar_projeto', antigo: antigo, novo: novo.trim() })
-                });
-                const json = await res.json();
+                const json = await opcoesApi.editarProjeto(antigo, novo.trim());
                 if (json.status === 'success') {
                     OPCOES_SISTEMA = json.data;
                     popularTodosSelects();
@@ -2305,12 +2275,7 @@
         async function excluirProjeto(item) {
             if (!confirm(`Deseja realmente excluir o projeto "${item}"?`)) return;
             try {
-                const res = await fetch('/api/opcoes', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: 'excluir_projeto', item: item })
-                });
-                const json = await res.json();
+                const json = await opcoesApi.excluirProjeto(item);
                 if (json.status === 'success') {
                     OPCOES_SISTEMA = json.data;
                     popularTodosSelects();
@@ -2369,12 +2334,7 @@
             const valor = input ? input.value.trim() : '';
             if (!valor) return;
             try {
-                const res = await fetch('/api/opcoes', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: 'adicionar_class1', class1: valor })
-                });
-                const json = await res.json();
+                const json = await opcoesApi.adicionarClass1(valor);
                 if (json.status === 'success') {
                     OPCOES_SISTEMA = json.data;
                     MAPA_CLASSIFICACOES = OPCOES_SISTEMA.classificacoes;
@@ -2394,12 +2354,7 @@
             const novo = prompt('Editar nome da categoria (Nível 1):', antigo);
             if (!novo || novo.trim() === '' || novo.trim() === antigo) return;
             try {
-                const res = await fetch('/api/opcoes', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: 'editar_class1', antigo: antigo, novo: novo.trim() })
-                });
-                const json = await res.json();
+                const json = await opcoesApi.editarClass1(antigo, novo.trim());
                 if (json.status === 'success') {
                     OPCOES_SISTEMA = json.data;
                     MAPA_CLASSIFICACOES = OPCOES_SISTEMA.classificacoes;
@@ -2416,12 +2371,7 @@
         async function excluirClass1(item) {
             if (!confirm(`Deseja realmente excluir a categoria "${item}" e todas as suas subclassificações?`)) return;
             try {
-                const res = await fetch('/api/opcoes', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: 'excluir_class1', class1: item })
-                });
-                const json = await res.json();
+                const json = await opcoesApi.excluirClass1(item);
                 if (json.status === 'success') {
                     OPCOES_SISTEMA = json.data;
                     MAPA_CLASSIFICACOES = OPCOES_SISTEMA.classificacoes;
@@ -2442,12 +2392,7 @@
             const valor = input ? input.value.trim() : '';
             if (!valor) return;
             try {
-                const res = await fetch('/api/opcoes', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: 'adicionar_class2', class1: c1, class2: valor })
-                });
-                const json = await res.json();
+                const json = await opcoesApi.adicionarClass2(c1, valor);
                 if (json.status === 'success') {
                     OPCOES_SISTEMA = json.data;
                     MAPA_CLASSIFICACOES = OPCOES_SISTEMA.classificacoes;
@@ -2464,12 +2409,7 @@
 
         async function excluirClass2(c1, c2) {
             try {
-                const res = await fetch('/api/opcoes', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: 'excluir_class2', class1: c1, class2: c2 })
-                });
-                const json = await res.json();
+                const json = await opcoesApi.excluirClass2(c1, c2);
                 if (json.status === 'success') {
                     OPCOES_SISTEMA = json.data;
                     MAPA_CLASSIFICACOES = OPCOES_SISTEMA.classificacoes;

@@ -5,6 +5,7 @@ import fs from 'fs';
 import path from 'path';
 import { supabase, supabaseAdmin } from '../../supabaseClient.js';
 import { WEBHOOK_URL } from '../../config/env.js';
+import { opcoesRepository } from '../repositories/SupabaseOpcoesRepository.js';
 
 // Rotas ainda nao migradas para a camada de use-cases/repositories (fase 3
 // so faz o dominio Auth/Admin). Corte-e-cola verbatim do antigo server.js -
@@ -104,249 +105,7 @@ async function chamarModelo(params, clientOverride, modelosOverride) {
 
 const chamarModeloComFallback = chamarModelo;
 
-const OPCOES_FILE = path.join(process.cwd(), 'opcoes_sistema.json');
 
-const OPCOES_DEFAULT = {
-  assuntosInternos: [
-    "Prosis", "Viamar", "Infraestrutura", "Rede Pró", "Suporte", "Scraping",
-    "Árvore de Categorias", "Automação", "Gestão", "Atendimento", "Integração API"
-  ],
-  projetos: [
-    "Interno", "SMB - CBA Diesel", "Projetos - Rede Pró", "Projetos - Agrominas",
-    "Projetos - Wurth", "Projetos - Campneus", "Projetos - Fortbras", "Projetos - CDC",
-    "Projetos - Prometeon", "Projetos - Tracbel", "Fabricantes - Unimil", "Fabricantes - Círculo",
-    "Projetos - Rodobens", "Projetos - Leo Madeira", "Fabricantes - Intercoffee",
-    "Projetos - Bunge", "SMB - Rasec", "Projetos - Broto"
-  ],
-  classificacoes: {
-    "Cadastro": [
-      "Avaliação de dados recebidos", "Contato com fabricantes", "Contato com lojista",
-      "Scraping", "Tratamento de SKU", "Tratamento de imagem", "Tratamento de aplicações",
-      "Reunião com cliente", "Reunião sobre Atividade / Projeto", "Consultoria", "Suporte interno"
-    ],
-    "Gerenciamento de projeto": [
-      "Criação de relatório", "Reunião com cliente", "Reunião sobre projeto", "Suporte ao cliente",
-      "Reunião sobre Atividade / Projeto", "Consultoria", "Suporte interno"
-    ],
-    "Infraestrutura": [
-      "Categorias", "Base de veículos", "Cadastro de fabricantes", "Reunião com cliente",
-      "Reunião sobre Atividade / Projeto", "Consultoria", "Suporte interno"
-    ],
-    "Matching": [
-      "Cadastro de sinônimos de nome de fabricante ou código de peça", "Reunião com cliente",
-      "Reunião sobre Atividade / Projeto", "Consultoria", "Suporte interno"
-    ],
-    "Qualidade": [
-      "Personalização de cadastro", "Correção de cadastro errado (Recebemos a informação correta e erramos na manipulação)",
-      "Reunião com cliente", "Reunião sobre Atividade / Projeto", "Consultoria", "Suporte interno"
-    ],
-    "Orçamento": ["Orçamento"],
-    "Reunião que não é sobre a atividade [Projeto deve ser interno]": ["Reunião interna"],
-    "Gestão de pessoas": [
-      "Contratação / Feedback / Estratégia do dpto e etc", "Grestão de equipe, tarefas e demandas"
-    ],
-    "Scraping": ["Scraping"],
-    "Sugestão e/ou Curadoria de Mídias CdP": ["Sugestão e/ou Curadoria de Mídias CdP"],
-    "Automação": ["Scraping", "Tratamento de Vista Explodida"]
-  }
-};
-
-async function carregarOpcoes() {
-  try {
-    const { data, error } = await supabaseAdmin
-      .from('opcoes_sistema')
-      .select('dados')
-      .eq('id', 'padrao')
-      .single();
-    if (!error && data && data.dados) {
-      return data.dados;
-    }
-  } catch (e) {
-    console.error(e);
-  }
-
-  try {
-    if (fs.existsSync(OPCOES_FILE)) {
-      const data = fs.readFileSync(OPCOES_FILE, 'utf8');
-      const parsed = JSON.parse(data);
-      if (parsed && Array.isArray(parsed.assuntosInternos) && Array.isArray(parsed.projetos) && parsed.classificacoes) {
-        return parsed;
-      }
-    }
-  } catch (e) {
-    console.error(e);
-  }
-  await salvarOpcoes(OPCOES_DEFAULT);
-  return OPCOES_DEFAULT;
-}
-
-async function salvarOpcoes(opcoes) {
-  try {
-    await supabaseAdmin
-      .from('opcoes_sistema')
-      .upsert({ id: 'padrao', dados: opcoes, updated_at: new Date().toISOString() });
-  } catch (e) {
-    console.error(e);
-  }
-
-  try {
-    fs.writeFileSync(OPCOES_FILE, JSON.stringify(opcoes, null, 2), 'utf8');
-    return true;
-  } catch (e) {
-    console.error(e);
-    return false;
-  }
-}
-
-function formatarListasParaPrompt(opcoes) {
-  const listaProjetos = (opcoes.projetos || []).map(p => `- ${p}`).join('\n');
-  const listaAssuntos = (opcoes.assuntosInternos || []).map(a => `- ${a}`).join('\n');
-  const combinacoes = [];
-  const classMap = opcoes.classificacoes || {};
-  for (const c1 of Object.keys(classMap)) {
-    const subs = classMap[c1];
-    if (Array.isArray(subs) && subs.length > 0) {
-      subs.forEach(c2 => combinacoes.push(`- ${c1} / ${c2}`));
-    } else {
-      combinacoes.push(`- ${c1}`);
-    }
-  }
-  return {
-    projetosStr: listaProjetos,
-    assuntosStr: listaAssuntos,
-    classificacoesStr: combinacoes.join('\n')
-  };
-}
-
-router.get('/api/opcoes', async (req, res) => {
-  const opcoes = await carregarOpcoes();
-  res.json({ status: 'success', data: opcoes });
-});
-
-router.post('/api/opcoes', async (req, res) => {
-  const { action } = req.body;
-  const opcoes = await carregarOpcoes();
-
-  if (action === 'salvar_tudo') {
-    const { dados } = req.body;
-    if (dados && Array.isArray(dados.assuntosInternos) && Array.isArray(dados.projetos) && dados.classificacoes) {
-      await salvarOpcoes(dados);
-      return res.json({ status: 'success', data: dados });
-    }
-    return res.status(400).json({ error: 'Dados inválidos' });
-  }
-
-  if (action === 'adicionar_assunto') {
-    const novo = (req.body.item || '').trim();
-    if (novo && !opcoes.assuntosInternos.includes(novo)) {
-      opcoes.assuntosInternos.push(novo);
-      await salvarOpcoes(opcoes);
-    }
-    return res.json({ status: 'success', data: opcoes });
-  }
-
-  if (action === 'editar_assunto') {
-    const antigo = (req.body.antigo || '').trim();
-    const novo = (req.body.novo || '').trim();
-    if (antigo && novo) {
-      const idx = opcoes.assuntosInternos.indexOf(antigo);
-      if (idx !== -1) {
-        opcoes.assuntosInternos[idx] = novo;
-        await salvarOpcoes(opcoes);
-      }
-    }
-    return res.json({ status: 'success', data: opcoes });
-  }
-
-  if (action === 'excluir_assunto') {
-    const item = (req.body.item || '').trim();
-    opcoes.assuntosInternos = opcoes.assuntosInternos.filter(a => a !== item);
-    await salvarOpcoes(opcoes);
-    return res.json({ status: 'success', data: opcoes });
-  }
-
-  if (action === 'adicionar_projeto') {
-    const novo = (req.body.item || '').trim();
-    if (novo && !opcoes.projetos.includes(novo)) {
-      opcoes.projetos.push(novo);
-      await salvarOpcoes(opcoes);
-    }
-    return res.json({ status: 'success', data: opcoes });
-  }
-
-  if (action === 'editar_projeto') {
-    const antigo = (req.body.antigo || '').trim();
-    const novo = (req.body.novo || '').trim();
-    if (antigo && novo) {
-      const idx = opcoes.projetos.indexOf(antigo);
-      if (idx !== -1) {
-        opcoes.projetos[idx] = novo;
-        await salvarOpcoes(opcoes);
-      }
-    }
-    return res.json({ status: 'success', data: opcoes });
-  }
-
-  if (action === 'excluir_projeto') {
-    const item = (req.body.item || '').trim();
-    opcoes.projetos = opcoes.projetos.filter(p => p !== item);
-    await salvarOpcoes(opcoes);
-    return res.json({ status: 'success', data: opcoes });
-  }
-
-  if (action === 'adicionar_class1') {
-    const c1 = (req.body.class1 || '').trim();
-    if (c1 && !opcoes.classificacoes[c1]) {
-      opcoes.classificacoes[c1] = [];
-      await salvarOpcoes(opcoes);
-    }
-    return res.json({ status: 'success', data: opcoes });
-  }
-
-  if (action === 'editar_class1') {
-    const antigo = (req.body.antigo || '').trim();
-    const novo = (req.body.novo || '').trim();
-    if (antigo && novo && antigo !== novo && opcoes.classificacoes[antigo]) {
-      opcoes.classificacoes[novo] = opcoes.classificacoes[antigo];
-      delete opcoes.classificacoes[antigo];
-      await salvarOpcoes(opcoes);
-    }
-    return res.json({ status: 'success', data: opcoes });
-  }
-
-  if (action === 'excluir_class1') {
-    const c1 = (req.body.class1 || '').trim();
-    if (c1 && opcoes.classificacoes[c1]) {
-      delete opcoes.classificacoes[c1];
-      await salvarOpcoes(opcoes);
-    }
-    return res.json({ status: 'success', data: opcoes });
-  }
-
-  if (action === 'adicionar_class2') {
-    const c1 = (req.body.class1 || '').trim();
-    const c2 = (req.body.class2 || '').trim();
-    if (c1 && c2 && opcoes.classificacoes[c1]) {
-      if (!opcoes.classificacoes[c1].includes(c2)) {
-        opcoes.classificacoes[c1].push(c2);
-        await salvarOpcoes(opcoes);
-      }
-    }
-    return res.json({ status: 'success', data: opcoes });
-  }
-
-  if (action === 'excluir_class2') {
-    const c1 = (req.body.class1 || '').trim();
-    const c2 = (req.body.class2 || '').trim();
-    if (c1 && c2 && opcoes.classificacoes[c1]) {
-      opcoes.classificacoes[c1] = opcoes.classificacoes[c1].filter(sub => sub !== c2);
-      await salvarOpcoes(opcoes);
-    }
-    return res.json({ status: 'success', data: opcoes });
-  }
-
-  res.status(400).json({ error: 'Ação de opções inválida' });
-});
 
 
 
@@ -720,7 +479,7 @@ router.post('/api/transcrever', upload.single('audio'), async (req, res) => {
 
     const textoCompleto = transcricao.text;
 
-    const opcoes = await carregarOpcoes();
+    const opcoes = await opcoesRepository.carregar();
     const { projetosStr, assuntosStr, classificacoesStr } = formatarListasParaPrompt(opcoes);
 
     const systemPrompt = `Você é um assistente executivo de alta senioridade, especializado em registrar atividades corporativas e de engenharia/produto com linguagem formal, concisa e altamente profissional.
@@ -1127,7 +886,7 @@ router.post('/api/transcrever-kanban', upload.single('audio'), async (req, res) 
       return res.status(400).json({ error: 'Nenhuma fala foi identificada no áudio. Fale mais próximo ao microfone e tente novamente.' });
     }
 
-    const opcoes = await carregarOpcoes();
+    const opcoes = await opcoesRepository.carregar();
     const { projetosStr, assuntosStr, classificacoesStr } = formatarListasParaPrompt(opcoes);
 
     const systemPrompt = `Você é um assistente de gestão de projetos que extrai TAREFAS PENDENTES a partir de áudio para um Quadro Kanban.
