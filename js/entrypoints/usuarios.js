@@ -2,24 +2,14 @@ import { obterUsuarioLogado, obterSessaoAuth, limparAutenticacao } from '../feat
 import { installAuthFetchInterceptor } from '../api/httpClient.js';
 import { toggleSidebar } from '../ui/sidebar.js';
 import { createAdminUsersModule } from '../features/admin-users.js';
+import { criarMostrarToast } from '../ui/toast.js';
 
 installAuthFetchInterceptor({ obterUsuarioLogado, obterSessaoAuth });
 
-// Toast simples, sem icones (usuarios.html nunca teve o registro de icones
-// APP_SVG_ICONS que index.html usa) - portado verbatim.
-function mostrarToast(mensagem, tipo = 'info') {
-  const container = document.getElementById('toast-container');
-  if (!container) return;
-  const toast = document.createElement('div');
-  toast.className = `toast toast-${tipo}`;
-  toast.innerHTML = `<span class="toast-message">${mensagem}</span>`;
-  container.appendChild(toast);
-  setTimeout(() => toast.classList.add('visible'), 50);
-  setTimeout(() => {
-    toast.classList.remove('visible');
-    setTimeout(() => toast.remove(), 300);
-  }, 3500);
-}
+// usuarios.html nunca teve o registro de icones (APP_SVG_ICONS) que
+// index.html usa, entao nao passa resolverIcone; a duracao de saida de
+// 300ms (index.html usa 350ms) e o timing original desta pagina, preservado.
+const mostrarToast = criarMostrarToast({ duracaoSaidaMs: 300 });
 
 function sairDoSistema() {
   limparAutenticacao();
