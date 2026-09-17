@@ -15,7 +15,7 @@ export function createSupabaseMock() {
       get(_target, prop) {
         if (prop === 'then') {
           return (resolve, reject) => {
-            Promise.resolve()
+            return Promise.resolve()
               .then(() => fromHandler(table, calls))
               .then(resolve, reject);
           };

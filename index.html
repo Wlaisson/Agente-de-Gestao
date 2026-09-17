@@ -1505,6 +1505,7 @@
         import { createAdminUsersModule } from './js/features/admin-users.js';
         import * as opcoesApi from './js/api/opcoesApi.js';
         import * as atividadesApi from './js/api/atividadesApi.js';
+        import * as kanbanApi from './js/api/kanbanApi.js';
 
         installAuthFetchInterceptor({ obterUsuarioLogado, obterSessaoAuth });
 
@@ -4826,7 +4827,7 @@
 
         async function carregarKanban() {
             try {
-                const res = await fetch('/api/kanban');
+                const res = await kanbanApi.listarCards();
                 const result = await res.json();
                 if (result.status === 'success' && Array.isArray(result.data)) {
                     kanbanCards = result.data;
@@ -4977,11 +4978,7 @@
             }
             mostrarToast(`Tarefa movida para "${novoStatus}"`, 'info');
             try {
-                await fetch('/api/kanban', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: 'update_kanban_status', id, status: novoStatus })
-                });
+                await kanbanApi.atualizarStatus(id, novoStatus);
             } catch (e) {
                 try {
                     await fetch(WEBHOOK_URL, {
@@ -5114,17 +5111,7 @@
             }
 
             try {
-                await fetch('/api/kanban', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        action: 'complete_kanban',
-                        id: cardId,
-                        tempo: tempo,
-                        classNivel1: class1,
-                        classNivel2: class2
-                    })
-                });
+                await kanbanApi.concluirCard({ id: cardId, tempo, classNivel1: class1, classNivel2: class2 });
             } catch (errKanban) {
                 console.error(errKanban);
             }
@@ -5144,11 +5131,7 @@
             renderizarKanban();
             mostrarToast('Tarefa excluída.', 'info');
             try {
-                await fetch('/api/kanban', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: 'delete_kanban', id })
-                });
+                await kanbanApi.excluirCard(id);
             } catch (e) {
                 try {
                     await fetch(WEBHOOK_URL, {
@@ -5200,11 +5183,7 @@
 
                 let cardId = 'K-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
                 try {
-                    const res = await fetch('/api/kanban', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
-                    });
+                    const res = await kanbanApi.adicionarCard(payload);
                     const resData = await res.json();
                     if (resData && resData.id) {
                         cardId = resData.id;
@@ -5301,11 +5280,7 @@
             mostrarToast('Tarefa atualizada com sucesso!', 'success');
 
             try {
-                await fetch('/api/kanban', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
+                await kanbanApi.editarCard(payload);
             } catch (err) {
                 try {
                     await fetch(WEBHOOK_URL, {

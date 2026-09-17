@@ -6,6 +6,7 @@ import path from 'path';
 import { supabase, supabaseAdmin } from '../../supabaseClient.js';
 import { WEBHOOK_URL } from '../../config/env.js';
 import { opcoesRepository } from '../repositories/SupabaseOpcoesRepository.js';
+import { kanbanRepository } from '../repositories/SupabaseKanbanRepository.js';
 
 // Rotas ainda nao migradas para a camada de use-cases/repositories (fase 3
 // so faz o dominio Auth/Admin). Corte-e-cola verbatim do antigo server.js -
@@ -323,279 +324,7 @@ Diretrizes Críticas:
   }
 });
 
-const KANBAN_FILE = path.join(process.cwd(), 'kanban_data.json');
 
-async function carregarCards() {
-  try {
-    const { data, error } = await supabase
-      .from('kanban_cards')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (!error && Array.isArray(data) && data.length > 0) {
-      return data.map(item => ({
-        id: item.id,
-        titulo: item.titulo || '',
-        descricao: item.descricao || '',
-        projeto: item.projeto || '',
-        assuntoInterno: item.assunto_interno || '',
-        classNivel1: item.class_nivel_1 || '',
-        classNivel2: item.class_nivel_2 || '',
-        prioridade: item.prioridade || 'Média',
-        status: item.status || 'A Fazer',
-        dataCriacao: item.data_criacao || '',
-        prazo: item.prazo || '',
-        tempo: item.tempo || ''
-      }));
-    }
-  } catch (e) {
-    console.error(e);
-  }
-
-  return carregarCardsLocais();
-}
-
-function carregarCardsLocais() {
-  try {
-    if (fs.existsSync(KANBAN_FILE)) {
-      const data = fs.readFileSync(KANBAN_FILE, 'utf8');
-      return JSON.parse(data);
-    }
-  } catch (e) {
-    console.error(e);
-  }
-  return [];
-}
-
-function salvarCardsLocais(cards) {
-  try {
-    fs.writeFileSync(KANBAN_FILE, JSON.stringify(cards, null, 2), 'utf8');
-  } catch (e) {
-    console.error(e);
-  }
-}
-
-router.get('/api/kanban', async (req, res) => {
-  const cards = await carregarCards();
-  res.json({ status: 'success', data: cards });
-});
-
-router.post('/api/kanban', async (req, res) => {
-  const { action } = req.body;
-  let cards = await carregarCards();
-
-  if (action === 'add_kanban') {
-    const novoCard = {
-      id: req.body.id || `K-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-      titulo: req.body.titulo || '',
-      descricao: req.body.descricao || '',
-      projeto: req.body.projeto || '',
-      assuntoInterno: req.body.assunto_interno || req.body.assuntoInterno || '',
-      classNivel1: req.body.classNivel1 || req.body.class1 || '',
-      classNivel2: req.body.classNivel2 || req.body.class2 || '',
-      prioridade: req.body.prioridade || 'Média',
-      status: req.body.status || 'A Fazer',
-      dataCriacao: new Date().toISOString().split('T')[0],
-      prazo: req.body.prazo || '',
-      tempo: req.body.tempo || ''
-    };
-    cards.unshift(novoCard);
-    salvarCardsLocais(cards);
-
-    try {
-      await supabase.from('kanban_cards').upsert({
-        id: novoCard.id,
-        titulo: novoCard.titulo,
-        descricao: novoCard.descricao,
-        projeto: novoCard.projeto,
-        assunto_interno: novoCard.assuntoInterno,
-        class_nivel_1: novoCard.classNivel1,
-        class_nivel_2: novoCard.classNivel2,
-        prioridade: novoCard.prioridade,
-        status: novoCard.status,
-        data_criacao: novoCard.dataCriacao,
-        prazo: novoCard.prazo,
-        tempo: novoCard.tempo,
-        updated_at: new Date().toISOString()
-      });
-    } catch (e) {
-      console.error(e);
-    }
-
-    fetch(WEBHOOK_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        action: 'add_kanban',
-        titulo: novoCard.titulo,
-        descricao: novoCard.descricao,
-        projeto: novoCard.projeto,
-        assunto_interno: novoCard.assuntoInterno,
-        classNivel1: novoCard.classNivel1,
-        classNivel2: novoCard.classNivel2,
-        prioridade: novoCard.prioridade,
-        prazo: novoCard.prazo,
-        status: novoCard.status
-      })
-    }).catch(err => console.error(err));
-
-    return res.json({ status: 'success', id: novoCard.id, data: novoCard });
-  }
-
-  if (action === 'update_kanban_status') {
-    const { id, status } = req.body;
-    const card = cards.find(c => c.id === id);
-    if (card) {
-      card.status = status;
-      salvarCardsLocais(cards);
-    }
-
-    try {
-      await supabase.from('kanban_cards').update({
-        status: status,
-        updated_at: new Date().toISOString()
-      }).eq('id', id);
-    } catch (e) {
-      console.error(e);
-    }
-
-    fetch(WEBHOOK_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'update_kanban_status', id, status })
-    }).catch(err => console.error(err));
-
-    return res.json({ status: 'success' });
-  }
-
-  if (action === 'delete_kanban') {
-    const { id } = req.body;
-    cards = cards.filter(c => c.id !== id);
-    salvarCardsLocais(cards);
-
-    try {
-      await supabase.from('kanban_cards').delete().eq('id', id);
-    } catch (e) {
-      console.error(e);
-    }
-
-    fetch(WEBHOOK_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'delete_kanban', id })
-    }).catch(err => console.error(err));
-
-    return res.json({ status: 'success' });
-  }
-
-  if (action === 'complete_kanban') {
-    const { id, tempo, classNivel1, classNivel2 } = req.body;
-    const card = cards.find(c => c.id === id);
-    if (card) {
-      card.status = 'Concluído';
-      if (classNivel1) card.classNivel1 = classNivel1;
-      if (classNivel2) card.classNivel2 = classNivel2;
-      if (tempo) card.tempo = tempo;
-      salvarCardsLocais(cards);
-    }
-
-    const updateSupabase = {
-      status: 'Concluído',
-      updated_at: new Date().toISOString()
-    };
-    if (classNivel1) updateSupabase.class_nivel_1 = classNivel1;
-    if (classNivel2) updateSupabase.class_nivel_2 = classNivel2;
-    if (tempo) updateSupabase.tempo = tempo;
-
-    try {
-      await supabase.from('kanban_cards').update(updateSupabase).eq('id', id);
-    } catch (e) {
-      console.error(e);
-    }
-
-    fetch(WEBHOOK_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        action: 'complete_kanban',
-        id,
-        tempo,
-        classNivel1,
-        classNivel2
-      })
-    }).catch(err => console.error(err));
-
-    return res.json({ status: 'success' });
-  }
-
-  if (action === 'edit_kanban' || action === 'update_kanban') {
-    const { id, titulo, descricao, projeto, assunto_interno, assuntoInterno, classNivel1, class1, classNivel2, class2, prioridade, prazo, status } = req.body;
-    const card = cards.find(c => c.id === id);
-    if (card) {
-      if (titulo !== undefined) card.titulo = titulo;
-      if (descricao !== undefined) card.descricao = descricao;
-      if (projeto !== undefined) card.projeto = projeto;
-      if (assunto_interno !== undefined || assuntoInterno !== undefined) {
-        card.assuntoInterno = assunto_interno || assuntoInterno || '';
-      }
-      if (classNivel1 !== undefined || class1 !== undefined) {
-        card.classNivel1 = classNivel1 || class1 || '';
-      }
-      if (classNivel2 !== undefined || class2 !== undefined) {
-        card.classNivel2 = classNivel2 || class2 || '';
-      }
-      if (prioridade !== undefined) card.prioridade = prioridade;
-      if (prazo !== undefined) card.prazo = prazo;
-      if (status !== undefined) card.status = status;
-      salvarCardsLocais(cards);
-    }
-
-    const updateSupabase = { updated_at: new Date().toISOString() };
-    if (titulo !== undefined) updateSupabase.titulo = titulo;
-    if (descricao !== undefined) updateSupabase.descricao = descricao;
-    if (projeto !== undefined) updateSupabase.projeto = projeto;
-    if (assunto_interno !== undefined || assuntoInterno !== undefined) {
-      updateSupabase.assunto_interno = assunto_interno || assuntoInterno || '';
-    }
-    if (classNivel1 !== undefined || class1 !== undefined) {
-      updateSupabase.class_nivel_1 = classNivel1 || class1 || '';
-    }
-    if (classNivel2 !== undefined || class2 !== undefined) {
-      updateSupabase.class_nivel_2 = classNivel2 || class2 || '';
-    }
-    if (prioridade !== undefined) updateSupabase.prioridade = prioridade;
-    if (prazo !== undefined) updateSupabase.prazo = prazo;
-    if (status !== undefined) updateSupabase.status = status;
-
-    try {
-      await supabase.from('kanban_cards').update(updateSupabase).eq('id', id);
-    } catch (e) {
-      console.error(e);
-    }
-
-    fetch(WEBHOOK_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        action: 'edit_kanban',
-        id,
-        titulo,
-        descricao,
-        projeto,
-        assunto_interno: assunto_interno || assuntoInterno || '',
-        classNivel1: classNivel1 || class1 || '',
-        classNivel2: classNivel2 || class2 || '',
-        prioridade,
-        prazo,
-        status
-      })
-    }).catch(err => console.error(err));
-
-    return res.json({ status: 'success', data: card });
-  }
-
-  res.status(400).json({ error: 'Ação inválida' });
-});
 
 router.post('/api/transcrever-kanban', upload.single('audio'), async (req, res) => {
   if (!req.file) {
@@ -723,7 +452,7 @@ Retorne APENAS o JSON, sem formatação markdown ou textos adicionais.`;
       };
     }
 
-    let cards = await carregarCards();
+    let cards = await kanbanRepository.listarCards();
     const tarefasSalvas = [];
     const hojeStr = new Date().toISOString().split('T')[0];
 
@@ -784,7 +513,7 @@ Retorne APENAS o JSON, sem formatação markdown ou textos adicionais.`;
       }).catch(err => console.error(err));
     }
 
-    salvarCardsLocais(cards);
+    kanbanRepository.salvarCardsLocais(cards);
 
     res.json({ tarefas: tarefasSalvas });
 
