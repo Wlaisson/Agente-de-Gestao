@@ -1504,6 +1504,7 @@
         import { TAB_TITULOS, toggleSidebar } from './js/ui/sidebar.js';
         import { createAdminUsersModule } from './js/features/admin-users.js';
         import * as opcoesApi from './js/api/opcoesApi.js';
+        import * as atividadesApi from './js/api/atividadesApi.js';
 
         installAuthFetchInterceptor({ obterUsuarioLogado, obterSessaoAuth });
 
@@ -3585,9 +3586,7 @@
 
             if (user && user.id) {
                 try {
-                    const resDb = await fetch('/api/atividades', {
-                        headers: { 'x-user-id': user.id }
-                    });
+                    const resDb = await atividadesApi.listarAtividades();
                     if (resDb.ok) {
                         const resultDb = await resDb.json();
                         if (resultDb && resultDb.status === 'success' && Array.isArray(resultDb.data)) {
@@ -3910,10 +3909,7 @@
                 const act = todasAtividades.find(item => String(item.id) === String(idOuRow) || String(item.row) === String(idOuRow));
                 const atvId = (act && act.id) ? act.id : idOuRow;
 
-                const res = await fetch(`/api/atividades/${encodeURIComponent(atvId)}`, {
-                    method: 'DELETE',
-                    headers: user && user.id ? { 'x-user-id': user.id } : {}
-                });
+                const res = await atividadesApi.excluirAtividade(atvId);
 
                 if (res.ok) {
                     mostrarToast('Atividade excluída com sucesso!', 'success');
@@ -4002,14 +3998,7 @@
 
                 if (atvId) {
                     try {
-                        const res = await fetch(`/api/atividades/${encodeURIComponent(atvId)}`, {
-                            method: 'PUT',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                ...(user && user.id ? { 'x-user-id': user.id } : {})
-                            },
-                            body: JSON.stringify(payload)
-                        });
+                        const res = await atividadesApi.atualizarAtividade(atvId, payload);
                         if (res.ok) {
                             salvo = true;
                         }
@@ -4273,14 +4262,7 @@
                 }
 
                 try {
-                    const resDb = await fetch('/api/atividades', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            ...(user && user.id ? { 'x-user-id': user.id } : {})
-                        },
-                        body: JSON.stringify(payload)
-                    });
+                    const resDb = await atividadesApi.criarAtividade(payload);
                     const dataDb = await resDb.json();
                     if (resDb.ok && dataDb.status === 'success') {
                         salvo = true;
@@ -4347,9 +4329,7 @@
                 const user = typeof obterUsuarioLogado === 'function' ? obterUsuarioLogado() : null;
                 if (user && user.id) {
                     try {
-                        const resDb = await fetch(`/api/atividades?start=${inicio}&end=${fim}`, {
-                            headers: { 'x-user-id': user.id }
-                        });
+                        const resDb = await atividadesApi.listarAtividades(`?start=${inicio}&end=${fim}`);
                         if (resDb.ok) {
                             const dataDb = await resDb.json();
                             if (dataDb && dataDb.status === 'success' && Array.isArray(dataDb.data)) {
@@ -5107,13 +5087,7 @@
 
             try {
                 const user = typeof obterUsuarioLogado === 'function' ? obterUsuarioLogado() : null;
-                await fetch('/api/atividades', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        ...(user && user.id ? { 'x-user-id': user.id } : {})
-                    },
-                    body: JSON.stringify({
+                await atividadesApi.criarAtividade({
                         data: meta.dataStr,
                         semana: meta.textoSemana,
                         projeto: (card && card.projeto) ? card.projeto : "Interno",
@@ -5124,8 +5098,7 @@
                         classNivel1: class1 || "",
                         classNivel2: class2 || "",
                         userId: user && user.id ? user.id : undefined
-                    })
-                });
+                    });
             } catch (errDbKanban) {
                 console.warn(errDbKanban);
             }
