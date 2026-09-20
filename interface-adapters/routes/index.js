@@ -7,7 +7,8 @@ import { createSupabaseAtividadeRepository } from '../repositories/SupabaseAtivi
 import { createSupabaseKanbanRepository } from '../repositories/SupabaseKanbanRepository.js';
 import { createSupabaseSetupRepository } from '../repositories/SupabaseSetupRepository.js';
 import { createOpenAIGateway } from '../gateways/OpenAIGateway.js';
-import { openaiGlobal, MODELOS } from '../../infrastructure/openai/openaiClient.js';
+import { createEmbeddingsGateway } from '../gateways/EmbeddingsGateway.js';
+import { openaiGlobal, MODELOS, MODELO_EMBEDDING } from '../../infrastructure/openai/openaiClient.js';
 import { makeAutenticarUsuarioUseCase } from '../../application/use-cases/auth/AutenticarUsuarioUseCase.js';
 import { makeCriarUsuarioUseCase } from '../../application/use-cases/admin/CriarUsuarioUseCase.js';
 import { makeListarUsuariosUseCase } from '../../application/use-cases/admin/ListarUsuariosUseCase.js';
@@ -56,9 +57,10 @@ export function createRoutes() {
   const usuarioRepository = createSupabaseUsuarioRepository({ supabase, supabaseAdmin });
   const opcoesRepository = createSupabaseOpcoesRepository({ supabaseAdmin });
   const atividadeRepository = createSupabaseAtividadeRepository({ supabaseAdmin });
-  const kanbanRepository = createSupabaseKanbanRepository({ supabase });
+  const kanbanRepository = createSupabaseKanbanRepository({ supabase, supabaseAdmin });
   const setupRepository = createSupabaseSetupRepository({ supabaseAdmin });
   const openAIGateway = createOpenAIGateway({ supabaseAdmin, openaiGlobal, modelosPadrao: MODELOS });
+  const embeddingsGateway = createEmbeddingsGateway({ modeloEmbedding: MODELO_EMBEDDING });
 
   const autenticarUsuario = makeAutenticarUsuarioUseCase({ usuarioRepository });
   const criarUsuario = makeCriarUsuarioUseCase({ usuarioRepository });
@@ -67,21 +69,21 @@ export function createRoutes() {
   const obterOpcoes = makeObterOpcoesUseCase({ opcoesRepository });
   const atualizarOpcoes = makeAtualizarOpcoesUseCase({ opcoesRepository });
   const listarAtividades = makeListarAtividadesUseCase({ atividadeRepository });
-  const criarAtividade = makeCriarAtividadeUseCase({ atividadeRepository });
-  const atualizarAtividade = makeAtualizarAtividadeUseCase({ atividadeRepository });
+  const criarAtividade = makeCriarAtividadeUseCase({ atividadeRepository, openAIGateway, embeddingsGateway });
+  const atualizarAtividade = makeAtualizarAtividadeUseCase({ atividadeRepository, openAIGateway, embeddingsGateway });
   const excluirAtividade = makeExcluirAtividadeUseCase({ atividadeRepository });
   const listarCards = makeListarCardsUseCase({ kanbanRepository });
-  const adicionarCard = makeAdicionarCardUseCase({ kanbanRepository });
+  const adicionarCard = makeAdicionarCardUseCase({ kanbanRepository, openAIGateway, embeddingsGateway });
   const atualizarStatusCard = makeAtualizarStatusCardUseCase({ kanbanRepository });
   const excluirCard = makeExcluirCardUseCase({ kanbanRepository });
   const concluirCard = makeConcluirCardUseCase({ kanbanRepository });
-  const editarCard = makeEditarCardUseCase({ kanbanRepository });
-  const transcreverAudioParaAtividade = makeTranscreverAudioParaAtividadeUseCase({ openAIGateway, opcoesRepository });
-  const transcreverAudioParaCard = makeTranscreverAudioParaCardUseCase({ openAIGateway, opcoesRepository, kanbanRepository });
-  const gerarRelatorioSemanal = makeGerarRelatorioSemanalUseCase({ atividadeRepository, openAIGateway });
+  const editarCard = makeEditarCardUseCase({ kanbanRepository, openAIGateway, embeddingsGateway });
+  const transcreverAudioParaAtividade = makeTranscreverAudioParaAtividadeUseCase({ openAIGateway, embeddingsGateway, opcoesRepository, atividadeRepository });
+  const transcreverAudioParaCard = makeTranscreverAudioParaCardUseCase({ openAIGateway, embeddingsGateway, opcoesRepository, kanbanRepository });
+  const gerarRelatorioSemanal = makeGerarRelatorioSemanalUseCase({ atividadeRepository, openAIGateway, embeddingsGateway });
   const obterConfigUsuario = makeObterConfigUsuarioUseCase({ setupRepository });
   const salvarConfigUsuario = makeSalvarConfigUsuarioUseCase({ setupRepository });
-  const processarReuniao = makeProcessarReuniaoUseCase({ openAIGateway });
+  const processarReuniao = makeProcessarReuniaoUseCase({ openAIGateway, embeddingsGateway, atividadeRepository, kanbanRepository });
 
   const authController = makeAuthController({ autenticarUsuario });
   const adminController = makeAdminController({ criarUsuario, listarUsuarios, excluirUsuario });

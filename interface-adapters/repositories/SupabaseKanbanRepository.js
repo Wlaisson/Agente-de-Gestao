@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { supabase } from '../../supabaseClient.js';
+import { supabase, supabaseAdmin } from '../../supabaseClient.js';
 
 // NOTA (flag, nao corrigido nesta fase - ver plano de reorganizacao): usa o
 // cliente Supabase ANONIMO (`supabase`), nao `supabaseAdmin` como todo o
@@ -24,7 +24,7 @@ function linhaParaCard(item) {
   };
 }
 
-export function createSupabaseKanbanRepository({ supabase }) {
+export function createSupabaseKanbanRepository({ supabase, supabaseAdmin }) {
   function carregarCardsLocais() {
     try {
       if (fs.existsSync(KANBAN_FILE)) {
@@ -74,8 +74,21 @@ export function createSupabaseKanbanRepository({ supabase }) {
 
     excluirSupabase(id) {
       return supabase.from('kanban_cards').delete().eq('id', id).then(() => {}).catch(e => console.error(e));
+    },
+
+    // Busca semantica via pgvector (schema-embeddings.sql). Usa supabaseAdmin
+    // (nao o cliente anonimo `supabase` usado pelo resto deste repositorio)
+    // porque chamadas RPC de leitura nao tem o mesmo motivo historico para
+    // usar o cliente anonimo que as escritas tem - e mantem o mesmo cliente
+    // usado pelo match_atividades equivalente, por consistencia.
+    buscarSimilares(embeddingConsulta, { userId, limite = 5 } = {}) {
+      return supabaseAdmin.rpc('match_kanban_cards', {
+        query_embedding: embeddingConsulta,
+        match_count: limite,
+        match_user_id: userId || null
+      });
     }
   };
 }
 
-export const kanbanRepository = createSupabaseKanbanRepository({ supabase });
+export const kanbanRepository = createSupabaseKanbanRepository({ supabase, supabaseAdmin });

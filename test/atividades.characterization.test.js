@@ -2,7 +2,7 @@
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { startTestServer } from './helpers/testServer.js';
-import { calledWith } from './helpers/supabaseMock.js';
+import { calledWith, findCallArgs } from './helpers/supabaseMock.js';
 
 let ctx;
 
@@ -119,4 +119,52 @@ test('DELETE /api/atividades/:id -> 200', async () => {
     headers: { 'x-user-id': 'u1' }
   });
   assert.equal(res.status, 200);
+});
+
+test('POST /api/atividades anexa embedding na linha gravada, mas nao no JSON de resposta', async () => {
+  let upsertPayload = null;
+  ctx.supabaseAdmin.setFromHandler((table, calls) => {
+    if (table !== 'atividades') return { data: null, error: null };
+    if (calledWith(calls, 'upsert')) {
+      upsertPayload = findCallArgs(calls, 'upsert')[0];
+      return { data: null, error: null };
+    }
+    return { data: [], error: null };
+  });
+
+  const res = await fetch(`${ctx.baseUrl}/api/atividades`, {
+    method: 'POST',
+    headers: { 'x-user-id': 'u1', 'content-type': 'application/json' },
+    body: JSON.stringify({ data: '2026-01-05', titulo: 'Reuniao', atividade: 'Alinhamento com cliente' })
+  });
+  assert.equal(res.status, 200);
+  const body = await res.json();
+
+  assert.ok(Array.isArray(upsertPayload.embedding));
+  assert.equal(upsertPayload.embedding.length, 1536);
+  assert.equal(body.data.embedding, undefined);
+});
+
+test('POST /api/atividades: falha na geracao de embedding nao bloqueia a escrita (degrada para null)', async () => {
+  ctx.openai.setEmbeddingHandler(async () => { throw new Error('embeddings indisponivel'); });
+  let upsertPayload = null;
+  ctx.supabaseAdmin.setFromHandler((table, calls) => {
+    if (table !== 'atividades') return { data: null, error: null };
+    if (calledWith(calls, 'upsert')) {
+      upsertPayload = findCallArgs(calls, 'upsert')[0];
+      return { data: null, error: null };
+    }
+    return { data: [], error: null };
+  });
+
+  const res = await fetch(`${ctx.baseUrl}/api/atividades`, {
+    method: 'POST',
+    headers: { 'x-user-id': 'u1', 'content-type': 'application/json' },
+    body: JSON.stringify({ data: '2026-01-05', titulo: 'X', atividade: 'Y' })
+  });
+  assert.equal(res.status, 200);
+  assert.equal(upsertPayload.embedding, null);
+
+  // restaura o handler padrao de embeddings para nao vazar para outros testes deste arquivo
+  ctx.openai.setEmbeddingHandler(async () => ({ data: [{ embedding: new Array(1536).fill(0) }] }));
 });

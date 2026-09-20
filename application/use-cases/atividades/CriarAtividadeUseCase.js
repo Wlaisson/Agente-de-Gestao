@@ -1,10 +1,11 @@
 import { mapearPayloadCriacao } from '../../../interface-adapters/mappers/AtividadePayloadMapper.js';
 import { WEBHOOK_URL } from '../../../config/env.js';
+import { tentarGerarEmbedding } from '../../../shared/embeddingHelpers.js';
 
 // Portado verbatim de POST /api/atividades: upsert no Supabase + espelho
 // fire-and-forget para o webhook legado do Google Sheets (erro so logado,
 // nunca falha a requisicao - mesmo comportamento de antes).
-export function makeCriarAtividadeUseCase({ atividadeRepository }) {
+export function makeCriarAtividadeUseCase({ atividadeRepository, openAIGateway, embeddingsGateway }) {
   return async function criarAtividade({ userId, body }) {
     if (!userId) {
       const erro = new Error('Usuário não autenticado.');
@@ -14,7 +15,21 @@ export function makeCriarAtividadeUseCase({ atividadeRepository }) {
 
     const registro = mapearPayloadCriacao(body || {}, userId);
 
-    const { error } = await atividadeRepository.upsert(registro);
+    // Embedding so na linha enviada ao Supabase, nunca no objeto retornado
+    // (mantem o contrato de resposta do endpoint identico). Falha aqui nunca
+    // bloqueia a escrita principal - mesma postura do espelho do webhook
+    // logo abaixo.
+    const registroComEmbedding = {
+      ...registro,
+      embedding: await tentarGerarEmbedding({
+        openAIGateway,
+        embeddingsGateway,
+        userId,
+        texto: `${registro.titulo}\n${registro.atividade}`
+      })
+    };
+
+    const { error } = await atividadeRepository.upsert(registroComEmbedding);
     if (error) {
       const erro = new Error(error.message);
       erro.status = 500;

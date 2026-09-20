@@ -43,6 +43,17 @@ export function createSupabaseAtividadeRepository({ supabaseAdmin }) {
       let query = supabaseAdmin.from('atividades').select('*').eq('semana', semana);
       if (userId) query = query.eq('user_id', userId);
       return query;
+    },
+
+    // Busca semantica via pgvector (schema-embeddings.sql). match_atividades
+    // ja filtra `embedding is not null`, entao linhas antigas sem embedding
+    // (gravadas antes desta feature) simplesmente nao aparecem no resultado.
+    buscarSimilares(embeddingConsulta, { userId, limite = 5 } = {}) {
+      return supabaseAdmin.rpc('match_atividades', {
+        query_embedding: embeddingConsulta,
+        match_count: limite,
+        match_user_id: userId || null
+      });
     }
   };
 }

@@ -1,11 +1,12 @@
 import { mapearNovoCard, cardParaLinhaSupabase } from '../../../interface-adapters/mappers/KanbanPayloadMapper.js';
 import { enviarParaWebhookLegado } from '../../../interface-adapters/gateways/GoogleSheetsWebhookGateway.js';
+import { tentarGerarEmbedding } from '../../../shared/embeddingHelpers.js';
 
 // Portado verbatim de action=add_kanban: escreve no arquivo local primeiro,
 // depois tenta Supabase (best-effort, erro so logado), depois dispara o
 // webhook legado (fire-and-forget) - mesma ordem e mesmo tratamento de erro
 // de antes (nenhuma das 3 escritas e transacional entre si).
-export function makeAdicionarCardUseCase({ kanbanRepository }) {
+export function makeAdicionarCardUseCase({ kanbanRepository, openAIGateway, embeddingsGateway }) {
   return async function adicionarCard(body) {
     const cards = await kanbanRepository.listarCards();
     const novoCard = mapearNovoCard(body);
@@ -13,7 +14,20 @@ export function makeAdicionarCardUseCase({ kanbanRepository }) {
     cards.unshift(novoCard);
     kanbanRepository.salvarCardsLocais(cards);
 
-    await kanbanRepository.upsertSupabase(cardParaLinhaSupabase(novoCard));
+    // NOTA (flag, ver schema-embeddings.sql): esta acao nao recebe userId
+    // (nem o body carrega um `userId`, nem o controller extrai de headers) -
+    // gap preexistente, nao corrigido aqui. obterCliente(undefined) cai no
+    // fallback de chave global/de outro usuario, ja flagueado em OpenAIGateway.js.
+    const linha = {
+      ...cardParaLinhaSupabase(novoCard),
+      embedding: await tentarGerarEmbedding({
+        openAIGateway,
+        embeddingsGateway,
+        userId: undefined,
+        texto: `${novoCard.titulo}\n${novoCard.descricao}`
+      })
+    };
+    await kanbanRepository.upsertSupabase(linha);
 
     enviarParaWebhookLegado({
       action: 'add_kanban',

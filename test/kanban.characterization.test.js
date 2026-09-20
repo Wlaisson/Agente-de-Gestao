@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { startTestServer } from './helpers/testServer.js';
-import { calledWith } from './helpers/supabaseMock.js';
+import { calledWith, findCallArgs } from './helpers/supabaseMock.js';
 
 let ctx;
 const kanbanFile = path.join(process.cwd(), 'kanban_data.json');
@@ -139,6 +139,55 @@ test('POST /api/kanban edit_kanban so altera campos enviados', async () => {
   const body = await res.json();
   assert.equal(body.data.titulo, 'Editado');
   assert.equal(body.data.descricao, 'Desc Original');
+});
+
+test('POST /api/kanban add_kanban anexa embedding na linha gravada, mas nao na resposta', async () => {
+  let upsertPayload = null;
+  ctx.supabase.setFromHandler((table, calls) => {
+    if (table !== 'kanban_cards') return { data: null, error: null };
+    if (calledWith(calls, 'select')) return { data: [], error: null };
+    if (calledWith(calls, 'upsert')) {
+      upsertPayload = findCallArgs(calls, 'upsert')[0];
+      return { data: null, error: null };
+    }
+    return { data: null, error: null };
+  });
+
+  const res = await fetch(`${ctx.baseUrl}/api/kanban`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ action: 'add_kanban', titulo: 'Card Embedding', descricao: 'Desc' })
+  });
+  assert.equal(res.status, 200);
+  const body = await res.json();
+
+  assert.ok(Array.isArray(upsertPayload.embedding));
+  assert.equal(upsertPayload.embedding.length, 1536);
+  assert.equal(body.data.embedding, undefined);
+});
+
+test('POST /api/kanban add_kanban: falha na geracao de embedding nao bloqueia a criacao do card', async () => {
+  ctx.openai.setEmbeddingHandler(async () => { throw new Error('embeddings indisponivel'); });
+  let upsertPayload = null;
+  ctx.supabase.setFromHandler((table, calls) => {
+    if (table !== 'kanban_cards') return { data: null, error: null };
+    if (calledWith(calls, 'select')) return { data: [], error: null };
+    if (calledWith(calls, 'upsert')) {
+      upsertPayload = findCallArgs(calls, 'upsert')[0];
+      return { data: null, error: null };
+    }
+    return { data: null, error: null };
+  });
+
+  const res = await fetch(`${ctx.baseUrl}/api/kanban`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ action: 'add_kanban', titulo: 'Card Sem Embedding' })
+  });
+  assert.equal(res.status, 200);
+  assert.equal(upsertPayload.embedding, null);
+
+  ctx.openai.setEmbeddingHandler(async () => ({ data: [{ embedding: new Array(1536).fill(0) }] }));
 });
 
 test('POST /api/kanban acao invalida -> 400', async () => {

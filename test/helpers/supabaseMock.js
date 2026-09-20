@@ -8,6 +8,7 @@ export function createSupabaseMock() {
   let fromHandler = () => ({ data: null, error: null });
   let authAdmin = {};
   let authClient = {};
+  let rpcHandler = () => ({ data: [], error: null });
 
   function makeChain(table) {
     const calls = [];
@@ -34,6 +35,11 @@ export function createSupabaseMock() {
 
   const client = {
     from: (table) => makeChain(table),
+    // .rpc() no supabase-js real tambem devolve um builder "thenable"
+    // encadeavel, mas nenhum codigo deste projeto encadeia nada apos um
+    // .rpc(...) (so faz `await supabaseAdmin.rpc(fn, params)` direto) -
+    // uma Promise simples e suficiente e mais facil de configurar por teste.
+    rpc: (fnName, params) => Promise.resolve().then(() => rpcHandler(fnName, params)),
     get auth() {
       return { admin: authAdmin, ...authClient };
     }
@@ -44,6 +50,7 @@ export function createSupabaseMock() {
     setFromHandler: (fn) => { fromHandler = fn; },
     setAuthAdmin: (obj) => { authAdmin = obj; },
     setAuthClient: (obj) => { authClient = obj; },
+    setRpcHandler: (fn) => { rpcHandler = fn; },
   };
 }
 
