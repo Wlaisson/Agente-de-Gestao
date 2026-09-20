@@ -1,6 +1,31 @@
 import { agruparPorAssunto } from '../../../domain/services/AgruparAtividadesPorAssunto.js';
 import { parseLlmJson } from '../../../shared/parseLlmJson.js';
 import { WEBHOOK_URL } from '../../../config/env.js';
+import { montarSystemPrompt } from '../../../shared/promptBuilder.js';
+import { tentarGerarEmbedding, tentarBuscarContextoRag } from '../../../shared/embeddingHelpers.js';
+import {
+  RELATORIO_CONSOLIDADO_PERSONA,
+  RELATORIO_CONSOLIDADO_NEGATIVAS,
+  RELATORIO_CONSOLIDADO_EXEMPLOS,
+  montarSchemaJsonRelatorioConsolidado,
+  RELATORIO_REPORTER_PERSONA,
+  RELATORIO_REPORTER_NEGATIVAS,
+  RELATORIO_REPORTER_EXEMPLOS,
+  montarSchemaJsonRelatorioReporter
+} from './relatorioPromptConfig.js';
+
+// Formata o contexto RAG de complemento: atividades semelhantes registradas em
+// OUTRAS semanas (a busca exata por semana em buscarEAgrupar continua sendo a
+// fonte primaria - exata e mais precisa que fuzzy para "o que aconteceu nesta
+// semana"). Exclui pelo id qualquer atividade que ja esteja na semana atual.
+function formatarContextoSemanasAnteriores(atividadesSimilares, idsSemanaAtual) {
+  const filtradas = (atividadesSimilares || []).filter(a => !idsSemanaAtual.has(a.id));
+  if (filtradas.length === 0) return '';
+  const linhas = filtradas.map(a =>
+    `- [Semana ${a.semana || 'N/A'}] "${a.titulo}" (assunto: ${a.assunto_interno || 'N/A'}, projeto: ${a.projeto || 'N/A'})`
+  );
+  return 'Padrões de semanas anteriores (atividades semelhantes já registradas em outras semanas - use apenas para reconhecer trabalho recorrente; a fonte primária desta semana é a lista de atividades acima):\n' + linhas.join('\n');
+}
 
 // As duas rotas de relatorio semanal (/api/gerar-relatorio e
 // /api/gerar-relatorio-reporter) compartilhavam ~70% de logica identica no
@@ -9,8 +34,11 @@ import { WEBHOOK_URL } from '../../../config/env.js';
 // use-case agora, parametrizado por `modo` ('consolidado' | 'reporter') -
 // o unico ponto real de divergencia entre as duas rotas (prompt e formato
 // de saida). URLs/verbos das duas rotas continuam identicos, so a logica
-// interna foi unificada.
-export function makeGerarRelatorioSemanalUseCase({ atividadeRepository, openAIGateway }) {
+// interna foi unificada. Reescrito para usar prompt-como-codigo
+// (relatorioPromptConfig.js) + RAG via pgvector (padroes de semanas
+// anteriores) + CoT oculto (campo "raciocinio", nunca retornado - whitelist
+// explicito em cada item de saida).
+export function makeGerarRelatorioSemanalUseCase({ atividadeRepository, openAIGateway, embeddingsGateway }) {
   async function buscarEAgrupar({ userId, semana }) {
     let listaAtividades = [];
 
@@ -18,6 +46,7 @@ export function makeGerarRelatorioSemanalUseCase({ atividadeRepository, openAIGa
       const { data: atvsDb } = await atividadeRepository.listarPorSemana(userId, semana);
       if (atvsDb && atvsDb.length > 0) {
         listaAtividades = atvsDb.map(a => ({
+          id: a.id,
           titulo: a.titulo,
           descricao: a.atividade,
           assuntoInterno: a.assunto_interno,
@@ -44,6 +73,17 @@ export function makeGerarRelatorioSemanalUseCase({ atividadeRepository, openAIGa
     return { listaAtividades, agrupado: agruparPorAssunto(listaAtividades) };
   }
 
+  async function buscarContextoSemanasAnteriores({ userId, listaAtividades }) {
+    return tentarBuscarContextoRag(async () => {
+      const digest = listaAtividades.map(a => `${a.titulo || ''} ${a.assuntoInterno || ''}`).join('. ');
+      const embeddingConsulta = await tentarGerarEmbedding({ openAIGateway, embeddingsGateway, userId, texto: digest });
+      if (!embeddingConsulta) return '';
+      const idsSemanaAtual = new Set(listaAtividades.map(a => a.id).filter(Boolean));
+      const { data: atividadesSimilares } = await atividadeRepository.buscarSimilares(embeddingConsulta, { userId, limite: 8 });
+      return formatarContextoSemanasAnteriores(atividadesSimilares, idsSemanaAtual);
+    });
+  }
+
   async function gerarConsolidado({ userId, semana, openAiConfig }) {
     const { listaAtividades, agrupado } = await buscarEAgrupar({ userId, semana });
 
@@ -61,37 +101,15 @@ export function makeGerarRelatorioSemanalUseCase({ atividadeRepository, openAIGa
       textoAgrupado += '\n';
     }
 
-    const systemPrompt = `Você é um Tech Lead responsável por criar um relatório executivo semanal formal e técnico.
-Abaixo, você receberá uma lista de micro-atividades técnicas realizadas na semana.
+    const contextoRag = await buscarContextoSemanasAnteriores({ userId, listaAtividades });
 
-Sua tarefa é analisar todas as atividades e agrupá-las em grandes tópicos (Ex: "Automações e Inteligência Artificial", "Atendimentos", etc) seguindo as regras abaixo:
-
-Diretrizes de Inteligência:
-1. FORMALIDADE E CONCISÃO: A linguagem deve ser técnica, formal e "direta ao ponto" (ex: "Desenvolvimento de automação para...", "Correção de erros no software..."). Sem enrolação.
-2. FILTRO RIGOROSO (O QUE NÃO INCLUIR): Ignore completamente e NÃO INCLUA:
-   - "Daily" ou "Daily Meeting"
-   - "Weekly" ou reuniões de status semanais
-   - Apresentações em geral (ex: "Apresentação para Everton", "Apresentação para IA", etc.)
-   - Reuniões que não sejam "Atendimentos" técnicos a clientes ou parceiros (como RedePRO, Agrominas, etc).
-3. CONSOLIDAÇÃO: Se houver múltiplas atividades sobre o mesmo assunto/tarefa (ex: vários atendimentos à RedePRO), UNA todas elas em uma única atividade bem resumida. Não liste várias vezes a mesma coisa.
-4. ESTRUTURAÇÃO: Agrupe os itens restantes em categorias amplas (o 'titulo' do JSON será o nome da categoria). Na 'descricao', liste as atividades no formato HTML. NÃO use a palavra "Título:" nem "Descrição:". Use este formato exato:
-   "<ul><li><strong>[Nome da Atividade/Assunto]:</strong> [Texto consolidado e direto da atividade, unindo tudo que for do mesmo assunto]. (Status)</li></ul>"
-5. CORREÇÃO ORTOGRÁFICA: Sempre que a atividade mencionar "Process", corrija para o nome correto do software: "Prosis".
-
-Formato de Saída Obrigatório (Gere um Objeto JSON, seguindo este esqueleto):
-{
-  "relatorio": [
-    {
-      "titulo": "Automações e Inteligência Artificial",
-      "descricao": "<ul><li><strong>Software Prosis:</strong> Correção de falhas e monitoramento contínuo da extração de dados. (Concluído)</li></ul>"
-    }
-  ]
-}
-
-CRÍTICO E MANDATÓRIO:
-1. Você é uma API de conversão de dados. O sistema depende que sua resposta seja EXCLUSIVAMENTE um JSON válido.
-2. É ESTRITAMENTE PROIBIDO gerar qualquer texto de raciocínio, explicação, ou "thinking process".
-3. O formato deve ser um objeto JSON puro.`;
+    const systemPrompt = montarSystemPrompt({
+      persona: RELATORIO_CONSOLIDADO_PERSONA,
+      negativas: RELATORIO_CONSOLIDADO_NEGATIVAS,
+      poucosExemplos: RELATORIO_CONSOLIDADO_EXEMPLOS,
+      schemaJson: montarSchemaJsonRelatorioConsolidado(),
+      contextoRag
+    });
 
     const completions = await openAIGateway.chamarModelo({
       messages: [
@@ -108,7 +126,13 @@ CRÍTICO E MANDATÓRIO:
 
     let resumoArray;
     if (resultado) {
-      resumoArray = resultado.relatorio || resultado;
+      const bruto = resultado.relatorio || resultado;
+      // Whitelist explicito: garante que "raciocinio" (exigido pelo CoT
+      // oculto) jamais chegue ao frontend, preservando o contrato de resposta
+      // exato de antes ({titulo, descricao} por item).
+      resumoArray = Array.isArray(bruto)
+        ? bruto.map(item => ({ titulo: item.titulo ?? '', descricao: item.descricao ?? '' }))
+        : bruto;
     } else {
       resumoArray = [{ titulo: 'Erro de Formatação', descricao: 'A IA retornou um formato inválido. Texto bruto gerado:\n' + respostaTexto }];
     }
@@ -136,52 +160,15 @@ CRÍTICO E MANDATÓRIO:
       textoAgrupado += '\n';
     }
 
-    const systemPrompt = `Você é um Chief of Staff virtual que prepara relatórios executivos semanais para CEOs e gestores seniores.
+    const contextoRag = await buscarContextoSemanasAnteriores({ userId, listaAtividades });
 
-Você receberá atividades já agrupadas por "Assunto Interno". Sua tarefa é produzir um relatório executivo de alto nível, aplicando consolidação inteligente.
-
-## POLÍTICA DE CONSOLIDAÇÃO (CRÍTICA):
-
-CONSOLIDAR (unir em 1 item):
-- Múltiplas linhas que tratam do MESMO tema, tarefa ou processo (ex: "Tratamento de atributos IA lote 1", "Tratamento de atributos IA lote 2", "Avaliação de atributos gerados por IA" → unir tudo em "Tratamento e Avaliação de Atributos via IA").
-- Atividades que são etapas ou desdobramentos de um mesmo fluxo de trabalho.
-- Tarefas repetitivas do dia-a-dia sobre o mesmo assunto.
-
-MANTER SEPARADO:
-- Reuniões sobre assuntos DISTINTOS (ex: "Reunião Academy" vs "Reunião com Gustavo e Renato" são 2 itens distintos).
-- Atividades que envolvem temas, clientes ou entregas fundamentalmente diferentes.
-- Qualquer item que, se fundido com outro, perderia informação relevante para um gestor.
-
-## REGRAS DE FORMATAÇÃO:
-
-1. MANTER os agrupamentos por assunto interno EXATAMENTE como recebidos. NÃO invente novos assuntos, NÃO mescle assuntos diferentes.
-2. Para cada item (consolidado ou individual), gere:
-   - "titulo": Título executivo, claro e direto (máximo 8 palavras). Se consolidou várias atividades, crie um título que abranja todas.
-   - "resumo": Resumo executivo em 1-3 frases. Linguagem formal, terceira pessoa, foco em RESULTADOS e ENTREGAS, não em processo. Se consolidou, mencione o escopo completo. Se houver informação de projeto/cliente, incorpore naturalmente.
-3. Corrija "Process" para "Prosis".
-4. NÃO inclua: dailies, weeklies, reuniões de status rotineiras, ou atividades puramente administrativas triviais.
-
-## TOM:
-- Executivo e conciso. Cada frase deve agregar valor para quem lê.
-- Foco em: o que foi feito, para quem, e qual o impacto/resultado.
-- Evite jargões técnicos excessivos — um CEO deve entender.
-
-Formato de Saída OBRIGATÓRIO (JSON puro, sem markdown):
-{
-  "quadrantes": [
-    {
-      "assunto": "Nome do Assunto Interno",
-      "itens": [
-        { "titulo": "Título Executivo", "resumo": "Resumo executivo conciso." }
-      ]
-    }
-  ]
-}
-
-REGRAS CRÍTICAS:
-- Retorne EXCLUSIVAMENTE o JSON. Nenhum texto adicional, nenhum raciocínio, nenhum markdown.
-- Mantenha TODOS os assuntos internos recebidos, mesmo que tenham apenas 1 atividade.
-- Dentro de cada assunto, o número de itens finais pode ser MENOR que o número de atividades recebidas (por causa da consolidação), mas NUNCA maior.`;
+    const systemPrompt = montarSystemPrompt({
+      persona: RELATORIO_REPORTER_PERSONA,
+      negativas: RELATORIO_REPORTER_NEGATIVAS,
+      poucosExemplos: RELATORIO_REPORTER_EXEMPLOS,
+      schemaJson: montarSchemaJsonRelatorioReporter(),
+      contextoRag
+    });
 
     const completions = await openAIGateway.chamarModelo({
       messages: [
@@ -198,7 +185,15 @@ REGRAS CRÍTICAS:
 
     let quadrantesArray;
     if (resultado) {
-      quadrantesArray = resultado.quadrantes || resultado;
+      const bruto = resultado.quadrantes || resultado;
+      // Whitelist explicito: garante que "raciocinio" jamais chegue ao
+      // frontend, tanto no nivel do quadrante quanto de cada item.
+      quadrantesArray = Array.isArray(bruto)
+        ? bruto.map(q => ({
+            assunto: q.assunto ?? '',
+            itens: Array.isArray(q.itens) ? q.itens.map(item => ({ titulo: item.titulo ?? '', resumo: item.resumo ?? '' })) : []
+          }))
+        : bruto;
     } else {
       quadrantesArray = [];
       for (const assunto in agrupado) {

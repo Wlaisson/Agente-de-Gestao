@@ -145,3 +145,125 @@ test('POST /api/transcrever-kanban: falha da IA cai no placeholder de tarefa uni
   assert.equal(body.tarefas.length, 1);
   assert.equal(body.tarefas[0].titulo, 'Nova Tarefa Registrada');
 });
+
+test('POST /api/transcrever: injeta contexto RAG (atividades semelhantes) no prompt', async () => {
+  ctx.supabaseAdmin.setFromHandler(opcoesTable());
+  ctx.supabaseAdmin.setRpcHandler((fnName) => {
+    if (fnName === 'match_atividades') {
+      return { data: [{ id: 'A-9', titulo: 'Manutenção anterior no Prosis', assunto_interno: 'Prosis', projeto: 'Interno' }], error: null };
+    }
+    return { data: [], error: null };
+  });
+  ctx.openai.setTranscriptionHandler(async () => ({ text: 'trabalhei no prosis por uma hora' }));
+
+  let promptEnviado = '';
+  ctx.openai.setChatHandler(async (params) => {
+    promptEnviado = params.messages[0].content;
+    return {
+      choices: [{
+        message: {
+          content: JSON.stringify({
+            projeto_oficial: 'Interno',
+            assunto_interno: 'Prosis',
+            titulo: 'Manutenção no Prosis',
+            descricao: 'Realizada manutenção no sistema Prosis.',
+            tempo: '01:00:00',
+            classNivel1: 'Cadastro',
+            classNivel2: 'Scraping'
+          })
+        }
+      }]
+    };
+  });
+
+  const res = await fetch(`${ctx.baseUrl}/api/transcrever`, { method: 'POST', body: montarFormData() });
+  assert.equal(res.status, 200);
+  assert.match(promptEnviado, /Manutenção anterior no Prosis/);
+});
+
+test('POST /api/transcrever: campo "raciocinio" do chain-of-thought oculto nunca aparece na resposta', async () => {
+  ctx.supabaseAdmin.setFromHandler(opcoesTable());
+  ctx.supabaseAdmin.setRpcHandler(() => ({ data: [], error: null }));
+  ctx.openai.setTranscriptionHandler(async () => ({ text: 'trabalhei no prosis por uma hora' }));
+  ctx.openai.setChatHandler(async () => ({
+    choices: [{
+      message: {
+        content: JSON.stringify({
+          raciocinio: 'Passo 1: identifiquei o projeto. Passo 2: mapeei o assunto.',
+          projeto_oficial: 'Interno',
+          assunto_interno: 'Prosis',
+          titulo: 'Manutenção no Prosis',
+          descricao: 'Realizada manutenção no sistema Prosis.',
+          tempo: '01:00:00',
+          classNivel1: 'Cadastro',
+          classNivel2: 'Scraping'
+        })
+      }
+    }]
+  }));
+
+  const res = await fetch(`${ctx.baseUrl}/api/transcrever`, { method: 'POST', body: montarFormData() });
+  assert.equal(res.status, 200);
+  const body = await res.json();
+  assert.equal('raciocinio' in body, false);
+  assert.deepEqual(Object.keys(body).sort(), ['assunto_interno', 'classNivel1', 'classNivel2', 'descricao', 'projeto_oficial', 'tempo', 'titulo']);
+});
+
+test('POST /api/transcrever-kanban: injeta contexto RAG (cards semelhantes) no prompt', async () => {
+  ctx.supabaseAdmin.setFromHandler(opcoesTable());
+  ctx.supabase.setFromHandler(kanbanTableEmpty());
+  ctx.supabaseAdmin.setRpcHandler((fnName) => {
+    if (fnName === 'match_kanban_cards') {
+      return { data: [{ id: 'K-9', titulo: 'Investigar erro 401 anterior', status: 'Em Andamento', assunto_interno: 'Prosis' }], error: null };
+    }
+    return { data: [], error: null };
+  });
+  ctx.openai.setTranscriptionHandler(async () => ({ text: 'preciso corrigir o bug X' }));
+
+  let promptEnviado = '';
+  ctx.openai.setChatHandler(async (params) => {
+    promptEnviado = params.messages[0].content;
+    return {
+      choices: [{
+        message: {
+          content: JSON.stringify({
+            tarefas: [
+              { titulo: 'Corrigir bug X', descricao: 'desc', projeto: 'Interno', assunto_interno: 'Prosis', classNivel1: 'Cadastro', classNivel2: 'Scraping', prioridade: 'Alta', prazo: '' }
+            ]
+          })
+        }
+      }]
+    };
+  });
+
+  const res = await fetch(`${ctx.baseUrl}/api/transcrever-kanban`, { method: 'POST', body: montarFormData() });
+  assert.equal(res.status, 200);
+  assert.match(promptEnviado, /Investigar erro 401 anterior/);
+});
+
+test('POST /api/transcrever-kanban: campo "raciocinio" do chain-of-thought oculto nunca aparece na resposta', async () => {
+  ctx.supabaseAdmin.setFromHandler(opcoesTable());
+  ctx.supabase.setFromHandler(kanbanTableEmpty());
+  ctx.supabaseAdmin.setRpcHandler(() => ({ data: [], error: null }));
+  ctx.openai.setTranscriptionHandler(async () => ({ text: 'preciso corrigir o bug X' }));
+  ctx.openai.setChatHandler(async () => ({
+    choices: [{
+      message: {
+        content: JSON.stringify({
+          raciocinio: 'Passo 1: identifiquei 1 tarefa. Passo 2: prioridade alta.',
+          tarefas: [
+            { titulo: 'Corrigir bug X', descricao: 'desc', projeto: 'Interno', assunto_interno: 'Prosis', classNivel1: 'Cadastro', classNivel2: 'Scraping', prioridade: 'Alta', prazo: '' }
+          ]
+        })
+      }
+    }]
+  }));
+
+  const res = await fetch(`${ctx.baseUrl}/api/transcrever-kanban`, { method: 'POST', body: montarFormData() });
+  assert.equal(res.status, 200);
+  const body = await res.json();
+  assert.equal('raciocinio' in body, false);
+  for (const tarefa of body.tarefas) {
+    assert.equal('raciocinio' in tarefa, false);
+  }
+});

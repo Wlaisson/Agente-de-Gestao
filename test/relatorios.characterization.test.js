@@ -135,6 +135,87 @@ test('POST /api/gerar-relatorio-reporter: resposta invalida reconstroi quadrante
   assert.equal(body.quadrantes[0].itens[0].titulo, 'T1');
 });
 
+test('POST /api/gerar-relatorio: injeta padroes de outras semanas (RAG) e exclui atividades da semana atual', async () => {
+  ctx.supabaseAdmin.setFromHandler(atividadesSemanaTable([
+    { id: 'A-atual', titulo: 'Atividade desta semana', atividade: 'desc', assunto_interno: 'Prosis', projeto: 'Interno', tempo: '01:00:00' }
+  ]));
+  ctx.supabaseAdmin.setRpcHandler(() => ({
+    data: [
+      { id: 'A-atual', titulo: 'Atividade desta semana', assunto_interno: 'Prosis', projeto: 'Interno', semana: '05/01 a 11/01' },
+      { id: 'A-antiga', titulo: 'Trabalho recorrente anterior', assunto_interno: 'Prosis', projeto: 'Interno', semana: '29/12 a 04/01' }
+    ],
+    error: null
+  }));
+
+  let promptEnviado = '';
+  ctx.openai.setChatHandler(async (params) => {
+    promptEnviado = params.messages[0].content;
+    return { choices: [{ message: { content: JSON.stringify({ relatorio: [] }) } }] };
+  });
+
+  const res = await fetch(`${ctx.baseUrl}/api/gerar-relatorio`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ semana: '05/01 a 11/01' })
+  });
+  assert.equal(res.status, 200);
+  assert.match(promptEnviado, /Trabalho recorrente anterior/);
+  assert.doesNotMatch(promptEnviado, /- \[Semana 05\/01 a 11\/01\]/);
+});
+
+test('POST /api/gerar-relatorio: campo "raciocinio" nunca aparece na resposta', async () => {
+  ctx.supabaseAdmin.setFromHandler(atividadesSemanaTable([
+    { titulo: 'T1', atividade: 'desc1', assunto_interno: 'Prosis', projeto: 'Interno', tempo: '01:00:00' }
+  ]));
+  ctx.supabaseAdmin.setRpcHandler(() => ({ data: [], error: null }));
+  ctx.openai.setChatHandler(async () => ({
+    choices: [{
+      message: {
+        content: JSON.stringify({
+          raciocinio: 'Passo 1: agrupei.',
+          relatorio: [{ raciocinio: 'interno', titulo: 'Prosis', descricao: '<ul></ul>' }]
+        })
+      }
+    }]
+  }));
+
+  const res = await fetch(`${ctx.baseUrl}/api/gerar-relatorio`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ semana: '05/01 a 11/01' })
+  });
+  const body = await res.json();
+  assert.equal('raciocinio' in body, false);
+  assert.deepEqual(Object.keys(body.resumo[0]).sort(), ['descricao', 'titulo']);
+});
+
+test('POST /api/gerar-relatorio-reporter: campo "raciocinio" nunca aparece nos quadrantes nem nos itens', async () => {
+  ctx.supabaseAdmin.setFromHandler(atividadesSemanaTable([
+    { titulo: 'T1', atividade: 'desc1', assunto_interno: 'Prosis', projeto: 'Interno', tempo: '01:00:00' }
+  ]));
+  ctx.supabaseAdmin.setRpcHandler(() => ({ data: [], error: null }));
+  ctx.openai.setChatHandler(async () => ({
+    choices: [{
+      message: {
+        content: JSON.stringify({
+          raciocinio: 'Passo 1: agrupei.',
+          quadrantes: [{ assunto: 'Prosis', raciocinio: 'interno', itens: [{ titulo: 'Manutenção', resumo: 'Resumo X', raciocinio: 'interno' }] }]
+        })
+      }
+    }]
+  }));
+
+  const res = await fetch(`${ctx.baseUrl}/api/gerar-relatorio-reporter`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ semana: '05/01 a 11/01' })
+  });
+  const body = await res.json();
+  assert.equal('raciocinio' in body, false);
+  assert.deepEqual(Object.keys(body.quadrantes[0]).sort(), ['assunto', 'itens']);
+  assert.deepEqual(Object.keys(body.quadrantes[0].itens[0]).sort(), ['resumo', 'titulo']);
+});
+
 test('POST /api/gerar-relatorio-reporter sem semana -> 400', async () => {
   const res = await fetch(`${ctx.baseUrl}/api/gerar-relatorio-reporter`, {
     method: 'POST',

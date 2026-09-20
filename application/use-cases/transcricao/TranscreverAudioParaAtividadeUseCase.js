@@ -1,8 +1,28 @@
 import { formatarListasParaPrompt } from './formatarListasParaPrompt.js';
 import { parseLlmJson } from '../../../shared/parseLlmJson.js';
+import { montarSystemPrompt } from '../../../shared/promptBuilder.js';
+import { tentarGerarEmbedding, tentarBuscarContextoRag } from '../../../shared/embeddingHelpers.js';
+import {
+  TRANSCRICAO_ATIVIDADE_PERSONA,
+  montarNegativasTranscricaoAtividade,
+  TRANSCRICAO_ATIVIDADE_EXEMPLOS,
+  montarSchemaJsonTranscricaoAtividade
+} from './transcricaoAtividadePromptConfig.js';
 
-// Portado verbatim de POST /api/transcrever.
-export function makeTranscreverAudioParaAtividadeUseCase({ openAIGateway, opcoesRepository }) {
+function formatarContextoAtividadesSimilares(atividades) {
+  if (!atividades || atividades.length === 0) return '';
+  const linhas = atividades.map(a =>
+    `- "${a.titulo || a.atividade}" (assunto: ${a.assunto_interno || 'N/A'}, projeto: ${a.projeto || 'N/A'})`
+  );
+  return 'Atividades semelhantes já registradas por este usuário (referência de vocabulário/padrão, não copie literalmente):\n' + linhas.join('\n');
+}
+
+// Transcreve o audio e extrai uma atividade estruturada. Reescrito para usar
+// prompt-como-codigo (persona/negativas/exemplos/schema em
+// transcricaoAtividadePromptConfig.js) + RAG via pgvector (busca atividades
+// semelhantes do mesmo usuario para dar contexto de vocabulario/padrao) +
+// CoT oculto (campo "raciocinio", nunca retornado - whitelist explicito).
+export function makeTranscreverAudioParaAtividadeUseCase({ openAIGateway, embeddingsGateway, opcoesRepository, atividadeRepository }) {
   return async function transcreverAudioParaAtividade({ userId, file }) {
     let openAiConfig;
     try {
@@ -25,22 +45,14 @@ export function makeTranscreverAudioParaAtividadeUseCase({ openAIGateway, opcoes
     const opcoes = await opcoesRepository.carregar();
     const { projetosStr, assuntosStr, classificacoesStr } = formatarListasParaPrompt(opcoes);
 
-    const systemPrompt = `Você é um assistente executivo de alta senioridade, especializado em registrar atividades corporativas e de engenharia/produto com linguagem formal, concisa e altamente profissional.
-Receberás a transcrição falada de um relato de atividade de um profissional. Transcrições de voz frequentemente contêm correções espontâneas ("ou melhor", "digo"), hesitações, gírias e linguagem informal ("a gente", "né").
+    const contextoRag = await tentarBuscarContextoRag(async () => {
+      const embeddingConsulta = await tentarGerarEmbedding({ openAIGateway, embeddingsGateway, userId, texto: textoCompleto });
+      if (!embeddingConsulta) return '';
+      const { data: atividadesSimilares } = await atividadeRepository.buscarSimilares(embeddingConsulta, { userId, limite: 5 });
+      return formatarContextoAtividadesSimilares(atividadesSimilares);
+    });
 
-Sua obrigação é filtrar esses vícios e transformar o relato em um registro técnico e executivo impecável.
-
-Retorne EXCLUSIVAMENTE um objeto JSON válido com os seguintes campos:
-
-{
-  "projeto_oficial": "Identifique e selecione o projeto EXATO da 'Lista de Projetos Válidos'. Se o usuário mencionar 'projeto interno' ou 'interno', mapeie para 'Interno'.",
-  "assunto_interno": "Identifique e selecione o assunto interno EXATO da 'Lista de Assuntos Internos Válidos'. Ex: se o usuário falar 'agente de aplicação', selecione 'Agente de Aplicações'. Se falar 'reunião com fulano', selecione o assunto correspondente.",
-  "titulo": "Crie um título executivo de alto nível, sintético e profissional (3 a 6 palavras) que resuma o núcleo da atividade. NUNCA use palavras truncadas e NUNCA copie o início da transcrição.",
-  "descricao": "Redija um resumo formal, objetivo e detalhado em terceira pessoa (voz passiva executiva, ex: 'Realizada reunião...', 'Alinhamento com...', 'Desenvolvido...'). Elimine vícios de fala, redundâncias e informalidades. Destaque com clareza o objetivo, as deliberações técnicas e os desdobramentos práticos.",
-  "tempo": "Extraia o tempo final mencionado no formato HH:MM:SS. Ex: se mencionou '20 minutos, 25 minutos', adote 00:25:00. Padrão: 01:00:00 se não especificado.",
-  "classNivel1": "Selecione o Nível 1 da combinação mais aderente da lista.",
-  "classNivel2": "Selecione o Nível 2 correspondente ao Nível 1 escolhido da lista."
-}
+    const persona = `${TRANSCRICAO_ATIVIDADE_PERSONA}
 
 Lista de Projetos Válidos:
 ${projetosStr}
@@ -49,12 +61,15 @@ Lista de Assuntos Internos Válidos:
 ${assuntosStr}
 
 Lista de Combinações de Classificação (Nível 1 / Nível 2):
-${classificacoesStr}
+${classificacoesStr}`;
 
-Diretrizes Críticas:
-1. Jamais devolva a transcrição crua na descrição.
-2. Jamais trunque frases no título.
-3. O JSON deve ser 100% puro e parseável.`;
+    const systemPrompt = montarSystemPrompt({
+      persona,
+      negativas: montarNegativasTranscricaoAtividade(),
+      poucosExemplos: TRANSCRICAO_ATIVIDADE_EXEMPLOS,
+      schemaJson: montarSchemaJsonTranscricaoAtividade(),
+      contextoRag
+    });
 
     const completions = await openAIGateway.chamarModelo({
       messages: [
@@ -68,9 +83,9 @@ Diretrizes Críticas:
 
     const respostaTexto = completions.choices[0].message.content.trim();
     const { resultado, textoLimpo } = parseLlmJson(respostaTexto);
-    let jsonResult = resultado;
+    let campos = resultado;
 
-    if (!jsonResult) {
+    if (!campos) {
       const matchTitulo = textoLimpo.match(/"titulo"\s*:\s*"([^"]+)"/i);
       const matchDesc = textoLimpo.match(/"descricao"\s*:\s*"([^"]+)"/i);
       const matchProj = textoLimpo.match(/"projeto_oficial"\s*:\s*"([^"]+)"/i);
@@ -79,7 +94,7 @@ Diretrizes Críticas:
       const matchC1 = textoLimpo.match(/"classNivel1"\s*:\s*"([^"]+)"/i);
       const matchC2 = textoLimpo.match(/"classNivel2"\s*:\s*"([^"]+)"/i);
 
-      jsonResult = {
+      campos = {
         projeto_oficial: matchProj ? matchProj[1] : 'Interno',
         assunto_interno: matchAssunto ? matchAssunto[1] : '',
         titulo: matchTitulo ? matchTitulo[1] : 'Registro de Atividade',
@@ -90,6 +105,17 @@ Diretrizes Críticas:
       };
     }
 
-    return jsonResult;
+    // Whitelist explicito: garante que "raciocinio" (exigido pelo CoT
+    // oculto) jamais chegue ao frontend, preservando o contrato de resposta
+    // exato de antes.
+    return {
+      projeto_oficial: campos.projeto_oficial ?? 'Interno',
+      assunto_interno: campos.assunto_interno ?? '',
+      titulo: campos.titulo ?? 'Registro de Atividade',
+      descricao: campos.descricao ?? '',
+      tempo: campos.tempo ?? '01:00:00',
+      classNivel1: campos.classNivel1 ?? '',
+      classNivel2: campos.classNivel2 ?? ''
+    };
   };
 }

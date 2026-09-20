@@ -1,9 +1,30 @@
 import { formatarListasParaPrompt } from './formatarListasParaPrompt.js';
 import { parseLlmJson } from '../../../shared/parseLlmJson.js';
 import { enviarParaWebhookLegado } from '../../../interface-adapters/gateways/GoogleSheetsWebhookGateway.js';
+import { montarSystemPrompt } from '../../../shared/promptBuilder.js';
+import { tentarGerarEmbedding, tentarBuscarContextoRag } from '../../../shared/embeddingHelpers.js';
+import {
+  TRANSCRICAO_CARD_PERSONA,
+  TRANSCRICAO_CARD_NEGATIVAS,
+  TRANSCRICAO_CARD_EXEMPLOS,
+  montarSchemaJsonTranscricaoCard
+} from './transcricaoCardPromptConfig.js';
 
-// Portado verbatim de POST /api/transcrever-kanban.
-export function makeTranscreverAudioParaCardUseCase({ openAIGateway, opcoesRepository, kanbanRepository }) {
+function formatarContextoCardsSimilares(cards) {
+  if (!cards || cards.length === 0) return '';
+  const linhas = cards.map(c =>
+    `- [status ${c.status}] "${c.titulo}" (assunto: ${c.assunto_interno || 'N/A'}, projeto: ${c.projeto || 'N/A'})`
+  );
+  return 'Tarefas semelhantes já existentes no Kanban (evite recriar algo que já está em andamento; referência, não copie literalmente):\n' + linhas.join('\n');
+}
+
+// Transcreve o audio e extrai N tarefas para o Kanban. Reescrito para usar
+// prompt-como-codigo (persona/negativas/exemplos/schema em
+// transcricaoCardPromptConfig.js) + RAG via pgvector (busca cards
+// semelhantes ja existentes) + CoT oculto (campo "raciocinio", nunca
+// persistido nem retornado). O caminho de escrita (upsert/webhook/cache
+// local) nao foi alterado nesta fase - so a construcao do prompt.
+export function makeTranscreverAudioParaCardUseCase({ openAIGateway, embeddingsGateway, opcoesRepository, kanbanRepository }) {
   return async function transcreverAudioParaCard({ userId, file }) {
     let openAiConfig;
     try {
@@ -32,28 +53,14 @@ export function makeTranscreverAudioParaCardUseCase({ openAIGateway, opcoesRepos
     const opcoes = await opcoesRepository.carregar();
     const { projetosStr, assuntosStr, classificacoesStr } = formatarListasParaPrompt(opcoes);
 
-    const systemPrompt = `Você é um assistente de gestão de projetos que extrai TAREFAS PENDENTES a partir de áudio para um Quadro Kanban.
-O usuário vai ditar tarefas que PRECISAM SER FEITAS (não são atividades já concluídas).
+    const contextoRag = await tentarBuscarContextoRag(async () => {
+      const embeddingConsulta = await tentarGerarEmbedding({ openAIGateway, embeddingsGateway, userId, texto: textoCompleto });
+      if (!embeddingConsulta) return '';
+      const { data: cardsSimilares } = await kanbanRepository.buscarSimilares(embeddingConsulta, { userId, limite: 5 });
+      return formatarContextoCardsSimilares(cardsSimilares);
+    });
 
-Sua tarefa é interpretar o texto e retornar APENAS um objeto JSON válido com a seguinte estrutura:
-
-{
-  "tarefas": [
-    {
-      "titulo": "Título curto, executivo e acionável da tarefa (máximo 8 palavras, comece preferencialmente com verbo no infinitivo: Implementar, Corrigir, Revisar, Configurar, etc.)",
-      "descricao": "Descrição detalhada do que precisa ser feito, com contexto relevante em terceira pessoa.",
-      "projeto": "SELECIONE OBRIGATORIAMENTE um projeto corporativo da lista abaixo. Se não mencionado ou incerto, use 'Interno' ou deixe vazio.",
-      "assunto_interno": "SELECIONE OBRIGATORIAMENTE um 'Assunto Interno' da 'Lista de assuntos internos válidos' no final deste prompt. Não invente assuntos novos, selecione o mais correspondente da lista.",
-      "classNivel1": "SELECIONE OBRIGATORIAMENTE uma 'Classificação nível 1' a partir da lista fornecida abaixo.",
-      "classNivel2": "SELECIONE OBRIGATORIAMENTE uma 'Classificação nível 2' que corresponda à 'Classificação nível 1' escolhida, baseando-se EXATAMENTE nas combinações da lista abaixo.",
-      "prioridade": "Alta, Média ou Baixa (infira pela urgência e tom do áudio, use Média como padrão)",
-      "prazo": "Data no formato YYYY-MM-DD se mencionada no áudio, ou vazio se não houver"
-    }
-  ]
-}
-
-Se o usuário mencionar MÚLTIPLAS tarefas, divida e extraia TODAS como itens separados no array.
-Se mencionar apenas UMA tarefa, retorne um array com 1 item.
+    const persona = `${TRANSCRICAO_CARD_PERSONA}
 
 Lista de projetos válidos (retorne exatamente como escrito aqui):
 ${projetosStr}
@@ -62,14 +69,15 @@ Lista de assuntos internos válidos (retorne exatamente como escrito aqui):
 ${assuntosStr}
 
 Lista de combinações válidas de Classificação nível 1 / Classificação nível 2 (escolha exatamente um par desta lista):
-${classificacoesStr}
+${classificacoesStr}`;
 
-Regras fonéticas e de correção:
-- Corrija "Process" ou "Proces" para "Prosis".
-- Corrija "Via Mar" para "Viamar".
-- Corrija "Rede Pro" para "Rede Pró".
-
-Retorne APENAS o JSON, sem formatação markdown ou textos adicionais.`;
+    const systemPrompt = montarSystemPrompt({
+      persona,
+      negativas: TRANSCRICAO_CARD_NEGATIVAS,
+      poucosExemplos: TRANSCRICAO_CARD_EXEMPLOS,
+      schemaJson: montarSchemaJsonTranscricaoCard(),
+      contextoRag
+    });
 
     let jsonResult = null;
     try {
