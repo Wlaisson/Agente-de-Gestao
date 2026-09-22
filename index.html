@@ -414,6 +414,28 @@
                             <button class="week-nav-btn" onclick="alterarSemana(1)">&gt;</button>
                         </div>
 
+                        <div class="week-filters-bar" style="display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: flex-end; margin-bottom: 1.25rem;">
+                            <div class="form-group" style="margin-bottom: 0; flex: 1; min-width: 160px;">
+                                <label for="filtro-semana-projeto">Projeto</label>
+                                <select id="filtro-semana-projeto" onchange="filtrarAtividadesSemana()">
+                                    <option value="">Todos os projetos</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="margin-bottom: 0; flex: 1; min-width: 160px;">
+                                <label for="filtro-semana-assunto">Assunto</label>
+                                <select id="filtro-semana-assunto" onchange="filtrarAtividadesSemana()">
+                                    <option value="">Todos os assuntos</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="margin-bottom: 0; flex: 1; min-width: 160px;">
+                                <label for="filtro-semana-dia">Dia</label>
+                                <select id="filtro-semana-dia" onchange="filtrarAtividadesSemana()">
+                                    <option value="">Todos os dias</option>
+                                </select>
+                            </div>
+                            <button type="button" class="btn btn-secondary" style="padding: 0.85rem 1rem; white-space: nowrap; width: auto;" onclick="limparFiltrosSemana()">Limpar filtros</button>
+                        </div>
+
                         <div id="conteudo-semana">
                             <div class="table-container">
                                 <table>
@@ -1589,6 +1611,7 @@
         window.fecharModalConclusao = (...a) => fecharModalConclusao(...a);
         window.fecharModalEditarKanban = (...a) => fecharModalEditarKanban(...a);
         window.fecharModalKanban = (...a) => fecharModalKanban(...a);
+        window.filtrarAtividadesSemana = (...a) => filtrarAtividadesSemana(...a);
         window.filtrarCampanhas = (...a) => filtrarCampanhas(...a);
         window.gerarRelatorio = (...a) => gerarRelatorio(...a);
         window.gerarRelatorioReporter = (...a) => gerarRelatorioReporter(...a);
@@ -1602,6 +1625,7 @@
         window.lancarFrequente = (...a) => lancarFrequente(...a);
         window.limparCampoTempo = (...a) => limparCampoTempo(...a);
         window.limparCampoTempoEdicao = (...a) => limparCampoTempoEdicao(...a);
+        window.limparFiltrosSemana = (...a) => limparFiltrosSemana(...a);
         window.moverCard = (...a) => moverCard(...a);
         window.renderizarListaAssuntos = (...a) => renderizarListaAssuntos(...a);
         window.renderizarListaProjetos = (...a) => renderizarListaProjetos(...a);
@@ -1885,6 +1909,9 @@
         
         let offsetSemanaAtual = 0;
         let semanaExibidaTexto = "";
+        let filtroSemanaProjeto = "";
+        let filtroSemanaAssunto = "";
+        let filtroSemanaDia = "";
         let offsetSemanaResumo = 0;
         let semanaResumoTexto = "";
         let offsetSemanaReporter = 0;
@@ -2950,20 +2977,80 @@
             legendDiv.innerHTML = legendHTML;
         }
 
+        // Opcoes dos 3 filtros (projeto/assunto/dia) sao derivadas so do que
+        // existe na semana exibida - filtrar por um valor que so aparece em
+        // outra semana nunca faria sentido aqui. Os 3 filtros sao
+        // independentes entre si (nao se restringem uns aos outros), so
+        // preserva a selecao atual quando o valor continua valido apos
+        // trocar de semana ou os dados mudarem.
+        function popularFiltrosSemana(atividadesDaSemana) {
+            const selProjeto = document.getElementById('filtro-semana-projeto');
+            const selAssunto = document.getElementById('filtro-semana-assunto');
+            const selDia = document.getElementById('filtro-semana-dia');
+            if (!selProjeto || !selAssunto || !selDia) return;
+
+            const ordemDias = ['segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira', 'sexta-feira', 'sábado', 'domingo'];
+            const projetos = [...new Set(atividadesDaSemana.map(a => (a.projeto || '').trim()).filter(Boolean))]
+                .sort((a, b) => a.localeCompare(b, 'pt-BR'));
+            const assuntos = [...new Set(atividadesDaSemana.map(a => (a.assuntoInterno || '').trim()).filter(v => v && v !== '-'))]
+                .sort((a, b) => a.localeCompare(b, 'pt-BR'));
+            const dias = [...new Set(atividadesDaSemana.map(a => a.diaSemana).filter(Boolean))]
+                .sort((a, b) => ordemDias.indexOf(a) - ordemDias.indexOf(b));
+
+            const montarOpcoes = (select, valores, valorAtual, textoTodos, formatarLabel) => {
+                select.innerHTML = `<option value="">${textoTodos}</option>` +
+                    valores.map(v => `<option value="${v}">${formatarLabel ? formatarLabel(v) : v}</option>`).join('');
+                select.value = valores.includes(valorAtual) ? valorAtual : '';
+            };
+            const capitalizar = s => s.charAt(0).toUpperCase() + s.slice(1);
+
+            montarOpcoes(selProjeto, projetos, filtroSemanaProjeto, 'Todos os projetos');
+            montarOpcoes(selAssunto, assuntos, filtroSemanaAssunto, 'Todos os assuntos');
+            montarOpcoes(selDia, dias, filtroSemanaDia, 'Todos os dias', capitalizar);
+
+            filtroSemanaProjeto = selProjeto.value;
+            filtroSemanaAssunto = selAssunto.value;
+            filtroSemanaDia = selDia.value;
+        }
+
+        function filtrarAtividadesSemana() {
+            filtroSemanaProjeto = document.getElementById('filtro-semana-projeto').value;
+            filtroSemanaAssunto = document.getElementById('filtro-semana-assunto').value;
+            filtroSemanaDia = document.getElementById('filtro-semana-dia').value;
+            renderizarAtividadesSemana();
+        }
+
+        function limparFiltrosSemana() {
+            filtroSemanaProjeto = "";
+            filtroSemanaAssunto = "";
+            filtroSemanaDia = "";
+            renderizarAtividadesSemana();
+        }
+
         function renderizarAtividadesSemana() {
             const tbody = document.getElementById('tabela-atividades-semana');
-            const filtradas = state.todasAtividades.filter(act => act.semana === semanaExibidaTexto);
+            const daSemana = state.todasAtividades.filter(act => act.semana === semanaExibidaTexto);
+            popularFiltrosSemana(daSemana);
+
+            const filtradas = daSemana.filter(act =>
+                (!filtroSemanaProjeto || (act.projeto || '').trim() === filtroSemanaProjeto) &&
+                (!filtroSemanaAssunto || (act.assuntoInterno || '').trim() === filtroSemanaAssunto) &&
+                (!filtroSemanaDia || act.diaSemana === filtroSemanaDia)
+            );
             const contadorEl = document.getElementById('contador-linhas-semana');
             const metaTotalEl = document.getElementById('meta-total-atividades-texto');
 
             if (filtradas.length === 0) {
                 if (contadorEl) contadorEl.textContent = '0 atividades';
                 if (metaTotalEl) metaTotalEl.textContent = '0';
+                const mensagemVazia = daSemana.length === 0
+                    ? `Nenhuma atividade lançada para a semana de ${semanaExibidaTexto}.`
+                    : 'Nenhuma atividade encontrada com os filtros selecionados.';
                 tbody.innerHTML = `
                     <tr>
                         <td colspan="9" class="empty-state">
                             <div class="empty-state-icon">${getAppSvgIcon('calendar', 'app-icon-xl')}</div>
-                            Nenhuma atividade lançada para a semana de ${semanaExibidaTexto}.
+                            ${mensagemVazia}
                         </td>
                     </tr>
                 `;
