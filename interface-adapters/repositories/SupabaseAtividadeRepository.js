@@ -1,3 +1,16 @@
+// A coluna `embedding` (vector) e adicionada por schema-embeddings.sql, que
+// precisa ser rodado manualmente no Supabase (nao ha migracao automatica
+// neste projeto - ver nota no topo daquele arquivo). Enquanto isso nao roda
+// em algum ambiente, o Postgrest recusa qualquer insert/update que cite
+// `embedding` com PGRST204 ("Could not find the 'embedding' column ... in
+// the schema cache"), o que travava POST/PUT /api/atividades inteiro so
+// porque o campo auxiliar de busca semantica nao tinha onde ser gravado -
+// contrariando a premissa do resto do fluxo (embeddingHelpers.js) de que
+// uma falha nessa feature auxiliar nunca deve bloquear a escrita principal.
+function erroColunaEmbeddingAusente(error) {
+  return !!error && error.code === 'PGRST204' && /embedding/i.test(error.message || '');
+}
+
 // Portado verbatim das queries de /api/atividades em server.js.
 export function createSupabaseAtividadeRepository({ supabaseAdmin }) {
   return {
@@ -21,14 +34,28 @@ export function createSupabaseAtividadeRepository({ supabaseAdmin }) {
       return query;
     },
 
-    upsert(registro) {
-      return supabaseAdmin.from('atividades').upsert(registro);
+    async upsert(registro) {
+      const resultado = await supabaseAdmin.from('atividades').upsert(registro);
+      if (erroColunaEmbeddingAusente(resultado.error)) {
+        const { embedding, ...semEmbedding } = registro;
+        return supabaseAdmin.from('atividades').upsert(semEmbedding);
+      }
+      return resultado;
     },
 
-    atualizar(id, userId, dados) {
-      let query = supabaseAdmin.from('atividades').update(dados).eq('id', id);
-      if (userId) query = query.eq('user_id', userId);
-      return query;
+    async atualizar(id, userId, dados) {
+      const construirQuery = (dadosQuery) => {
+        let query = supabaseAdmin.from('atividades').update(dadosQuery).eq('id', id);
+        if (userId) query = query.eq('user_id', userId);
+        return query;
+      };
+
+      const resultado = await construirQuery(dados);
+      if (erroColunaEmbeddingAusente(resultado.error)) {
+        const { embedding, ...semEmbedding } = dados;
+        return construirQuery(semEmbedding);
+      }
+      return resultado;
     },
 
     excluir(id, userId) {

@@ -145,6 +145,58 @@ test('POST /api/atividades anexa embedding na linha gravada, mas nao no JSON de 
   assert.equal(body.data.embedding, undefined);
 });
 
+test('POST /api/atividades: coluna embedding ausente no banco (migracao nao rodada) nao bloqueia a escrita', async () => {
+  let upsertCalls = 0;
+  let ultimoPayload = null;
+  ctx.supabaseAdmin.setFromHandler((table, calls) => {
+    if (table !== 'atividades') return { data: null, error: null };
+    if (calledWith(calls, 'upsert')) {
+      upsertCalls += 1;
+      ultimoPayload = findCallArgs(calls, 'upsert')[0];
+      if (upsertCalls === 1) {
+        return { data: null, error: { code: 'PGRST204', message: "Could not find the 'embedding' column of 'atividades' in the schema cache" } };
+      }
+      return { data: null, error: null };
+    }
+    return { data: [], error: null };
+  });
+
+  const res = await fetch(`${ctx.baseUrl}/api/atividades`, {
+    method: 'POST',
+    headers: { 'x-user-id': 'u1', 'content-type': 'application/json' },
+    body: JSON.stringify({ data: '2026-01-05', titulo: 'X', atividade: 'Y' })
+  });
+  assert.equal(res.status, 200);
+  assert.equal(upsertCalls, 2);
+  assert.equal('embedding' in ultimoPayload, false);
+});
+
+test('PUT /api/atividades/:id: coluna embedding ausente no banco (migracao nao rodada) nao bloqueia a atualizacao', async () => {
+  let updateCalls = 0;
+  let ultimoPayload = null;
+  ctx.supabaseAdmin.setFromHandler((table, calls) => {
+    if (table !== 'atividades') return { data: null, error: null };
+    if (calledWith(calls, 'update')) {
+      updateCalls += 1;
+      ultimoPayload = findCallArgs(calls, 'update')[0];
+      if (updateCalls === 1) {
+        return { data: null, error: { code: 'PGRST204', message: "Could not find the 'embedding' column of 'atividades' in the schema cache" } };
+      }
+      return { data: null, error: null };
+    }
+    return { data: [], error: null };
+  });
+
+  const res = await fetch(`${ctx.baseUrl}/api/atividades/ATV-1`, {
+    method: 'PUT',
+    headers: { 'x-user-id': 'u1', 'content-type': 'application/json' },
+    body: JSON.stringify({ titulo: 'Novo Titulo', atividade: 'Nova descricao' })
+  });
+  assert.equal(res.status, 200);
+  assert.equal(updateCalls, 2);
+  assert.equal('embedding' in ultimoPayload, false);
+});
+
 test('POST /api/atividades: falha na geracao de embedding nao bloqueia a escrita (degrada para null)', async () => {
   ctx.openai.setEmbeddingHandler(async () => { throw new Error('embeddings indisponivel'); });
   let upsertPayload = null;
