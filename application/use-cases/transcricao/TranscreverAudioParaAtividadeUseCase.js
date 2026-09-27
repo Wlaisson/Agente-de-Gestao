@@ -2,6 +2,7 @@ import { formatarListasParaPrompt } from './formatarListasParaPrompt.js';
 import { parseLlmJson } from '../../../shared/parseLlmJson.js';
 import { montarSystemPrompt } from '../../../shared/promptBuilder.js';
 import { tentarGerarEmbedding, tentarBuscarContextoRag } from '../../../shared/embeddingHelpers.js';
+import { PROMPT_VOCABULARIO_WHISPER, normalizarTermos } from '../../../shared/vocabularioTranscricao.js';
 import {
   TRANSCRICAO_ATIVIDADE_PERSONA,
   montarNegativasTranscricaoAtividade,
@@ -37,7 +38,8 @@ export function makeTranscreverAudioParaAtividadeUseCase({ openAIGateway, embedd
       openai: openAiConfig.openai,
       buffer: file.buffer,
       filename: file.originalname,
-      mimetype: file.mimetype
+      mimetype: file.mimetype,
+      prompt: PROMPT_VOCABULARIO_WHISPER
     });
 
     const textoCompleto = transcricao.text;
@@ -111,8 +113,8 @@ ${classificacoesStr}`;
     return {
       projeto_oficial: campos.projeto_oficial ?? 'Interno',
       assunto_interno: campos.assunto_interno ?? '',
-      titulo: campos.titulo ?? 'Registro de Atividade',
-      descricao: campos.descricao ?? '',
+      titulo: normalizarTermos(campos.titulo) ?? 'Registro de Atividade',
+      descricao: normalizarTermos(campos.descricao) ?? '',
       tempo: campos.tempo ?? '01:00:00',
       classNivel1: campos.classNivel1 ?? '',
       classNivel2: campos.classNivel2 ?? ''

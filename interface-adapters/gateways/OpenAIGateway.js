@@ -81,13 +81,16 @@ export function createOpenAIGateway({ supabaseAdmin, openaiGlobal, modelosPadrao
     throw ultimoErro;
   }
 
-  async function transcreverAudio({ openai, buffer, filename, mimetype }) {
+  // `prompt` (opcional): vocabulario de dominio que orienta a grafia de nomes
+  // proprios na transcricao - ver shared/vocabularioTranscricao.js.
+  async function transcreverAudio({ openai, buffer, filename, mimetype, prompt }) {
     const audioFile = await toFile(buffer, filename || 'audio.webm', { type: mimetype || 'audio/webm' });
     return openai.audio.transcriptions.create({
       file: audioFile,
       model: 'whisper-1',
       language: 'pt',
-      response_format: 'json'
+      response_format: 'json',
+      ...(prompt ? { prompt } : {})
     });
   }
 

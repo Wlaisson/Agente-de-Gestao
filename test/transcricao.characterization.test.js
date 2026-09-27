@@ -97,6 +97,39 @@ test('POST /api/transcrever: resposta da IA nao-JSON cai no fallback via regex',
   assert.equal(body.projeto_oficial, 'Interno'); // default quando nao casado pela regex
 });
 
+test('POST /api/transcrever: envia vocabulario ao Whisper, pede padrao de titulo de SKU e normaliza grafias', async () => {
+  ctx.supabaseAdmin.setFromHandler(opcoesTable());
+  let paramsTranscricao;
+  let systemPrompt;
+  ctx.openai.setTranscriptionHandler(async (params) => {
+    paramsTranscricao = params;
+    return { text: 'cadastrei um sku com uma imagem da vurt, um card no clicap' };
+  });
+  ctx.openai.setChatHandler(async (payload) => {
+    if (payload.messages) systemPrompt = payload.messages[0].content;
+    return {
+      choices: [{
+        message: {
+          content: JSON.stringify({
+            projeto_oficial: 'Interno',
+            titulo: 'Cadastro de 1 SKU com 1 Imagem 1 Card Clickup',
+            descricao: 'Realizado o cadastro de 1 SKU da VURT com 1 imagem, referente a 1 card no Clicap.',
+            tempo: '00:10:00'
+          })
+        }
+      }]
+    };
+  });
+
+  const res = await fetch(`${ctx.baseUrl}/api/transcrever`, { method: 'POST', body: montarFormData() });
+  assert.equal(res.status, 200);
+  const body = await res.json();
+  assert.match(paramsTranscricao.prompt, /ClickUp/);
+  assert.match(systemPrompt, /Padrão de título para operações com SKU/);
+  assert.equal(body.titulo, 'Cadastro de 1 SKU com 1 Imagem 1 Card ClickUp');
+  assert.equal(body.descricao, 'Realizado o cadastro de 1 SKU da Wurth com 1 imagem, referente a 1 card no ClickUp.');
+});
+
 test('POST /api/transcrever-kanban sem arquivo -> 400', async () => {
   const res = await fetch(`${ctx.baseUrl}/api/transcrever-kanban`, { method: 'POST', body: new FormData() });
   assert.equal(res.status, 400);

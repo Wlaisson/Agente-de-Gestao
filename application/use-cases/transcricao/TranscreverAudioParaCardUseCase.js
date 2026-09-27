@@ -3,6 +3,7 @@ import { parseLlmJson } from '../../../shared/parseLlmJson.js';
 import { enviarParaWebhookLegado } from '../../../interface-adapters/gateways/GoogleSheetsWebhookGateway.js';
 import { montarSystemPrompt } from '../../../shared/promptBuilder.js';
 import { tentarGerarEmbedding, tentarBuscarContextoRag } from '../../../shared/embeddingHelpers.js';
+import { PROMPT_VOCABULARIO_WHISPER, normalizarTermos } from '../../../shared/vocabularioTranscricao.js';
 import {
   TRANSCRICAO_CARD_PERSONA,
   TRANSCRICAO_CARD_NEGATIVAS,
@@ -39,7 +40,8 @@ export function makeTranscreverAudioParaCardUseCase({ openAIGateway, embeddingsG
       openai: openAiConfig.openai,
       buffer: file.buffer,
       filename: file.originalname,
-      mimetype: file.mimetype
+      mimetype: file.mimetype,
+      prompt: PROMPT_VOCABULARIO_WHISPER
     });
 
     const textoCompleto = transcricao.text ? transcricao.text.trim() : '';
@@ -119,8 +121,8 @@ ${classificacoesStr}`;
     for (const tarefa of (jsonResult.tarefas || [jsonResult])) {
       const novoCard = {
         id: `K-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-        titulo: tarefa.titulo || 'Nova Tarefa',
-        descricao: tarefa.descricao || '',
+        titulo: normalizarTermos(tarefa.titulo) || 'Nova Tarefa',
+        descricao: normalizarTermos(tarefa.descricao) || '',
         projeto: tarefa.projeto || '',
         assuntoInterno: tarefa.assunto_interno || tarefa.assuntoInterno || '',
         classNivel1: tarefa.classNivel1 || '',
