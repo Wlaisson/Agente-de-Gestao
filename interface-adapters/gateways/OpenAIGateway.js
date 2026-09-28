@@ -72,7 +72,22 @@ export function createOpenAIGateway({ supabaseAdmin, openaiGlobal, modelosPadrao
         if (modelo.startsWith('gpt-5') || modelo.startsWith('o1') || modelo.startsWith('o3') || modelo.startsWith('o4')) {
           delete payload.temperature;
         }
-        return await openaiInstance.chat.completions.create(payload);
+        // Os prompts ja pedem o raciocinio no campo "raciocinio" do JSON - o
+        // raciocinio interno do modelo e redundante e, com prompts maiores,
+        // consumia todo o max_completion_tokens (finish_reason "length",
+        // content vazio). 'minimal' so existe na familia gpt-5 original.
+        if (/^gpt-5(-mini|-nano)?(-\d{4}-\d{2}-\d{2})?$/.test(modelo) && !payload.reasoning_effort) {
+          payload.reasoning_effort = 'minimal';
+        }
+        const resposta = await openaiInstance.chat.completions.create(payload);
+        const escolha = resposta.choices && resposta.choices[0];
+        // Resposta vazia (ex.: tokens esgotados no raciocinio) conta como
+        // falha para cair no proximo modelo, em vez de seguir para o
+        // fallback generico do use-case.
+        if (!escolha || !escolha.message || !escolha.message.content) {
+          throw new Error(`resposta vazia (finish_reason: ${escolha ? escolha.finish_reason : 'n/a'})`);
+        }
+        return resposta;
       } catch (err) {
         ultimoErro = err;
         console.log(`[MODELO] Falha com ${modelo}: ${err.status || err.message}`);
