@@ -9,3 +9,10 @@ recovery-codes.txt
 # Supabase esta indisponivel - nao sao dados versionados.
 opcoes_sistema.json
 kanban_data.json
+
+# Ferramentas locais de IA/design (nao versionar)
+.claude/
+.impeccable/
+.agent/
+.gemini/
+.opencode/

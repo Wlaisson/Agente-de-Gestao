@@ -3457,24 +3457,6 @@
             if (elAtiv) elAtiv.textContent = String(ativsHojeCount);
 
             atualizarHomeDashboard();
-
-            if (!WEBHOOK_URL.includes('SUA_URL_DO_WEBHOOK')) {
-                try {
-                    const res = await fetch(`${WEBHOOK_URL}?action=dashboard&today=${hoje}`);
-                    const data = await res.json();
-                    if (data && data.status === 'success') {
-                        if (data.horasHoje && data.horasHoje !== '00:00:00' && data.horasHoje !== '00:00') {
-                            if (elHoras) elHoras.textContent = data.horasHoje;
-                        }
-                        if (data.atividades && Number(data.atividades) > ativsHojeCount) {
-                            if (elAtiv) elAtiv.textContent = data.atividades;
-                        }
-                        atualizarHomeDashboard();
-                    }
-                } catch (err) {
-                    console.warn(err);
-                }
-            }
         }
 
         document.getElementById('registroForm').addEventListener('submit', async (e) => {
@@ -3523,6 +3505,13 @@
                     payload.userId = user.id;
                 }
 
+                // O espelho para a planilha legada do Google Sheets ja e feito pelo
+                // backend (CriarAtividadeUseCase, fire-and-forget, so depois de um
+                // upsert bem-sucedido no Supabase). Este formulario costumava fazer
+                // um segundo POST direto pro mesmo webhook aqui - duplicava toda
+                // atividade na planilha e, pior, marcava `salvo = true` mesmo quando
+                // o upsert no Supabase falhava, entao a tela dizia "sucesso" para
+                // uma atividade que nunca apareceria em Atividades da Semana.
                 try {
                     const resDb = await atividadesApi.criarAtividade(payload);
                     const dataDb = await resDb.json();
@@ -3531,19 +3520,6 @@
                     }
                 } catch (eDb) {
                     console.warn(eDb);
-                }
-
-                if (!WEBHOOK_URL.includes('SUA_URL_DO_WEBHOOK')) {
-                    try {
-                        await fetch(WEBHOOK_URL, {
-                            method: 'POST',
-                            body: JSON.stringify(rawData),
-                            mode: 'no-cors'
-                        });
-                        salvo = true;
-                    } catch (eSheet) {
-                        console.warn(eSheet);
-                    }
                 }
 
                 if (salvo) {
