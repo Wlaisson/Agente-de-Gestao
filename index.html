@@ -2103,6 +2103,12 @@
                 mostrarToast('Nenhuma atividade carregada para importar.', 'warning');
                 return;
             }
+            // salvar_tudo sobrescreve a lista inteira: se as opcoes nao carregaram,
+            // gravariamos so os assuntos do historico por cima dos cadastrados.
+            if (!(state.OPCOES_SISTEMA.assuntosInternos || []).length) {
+                mostrarToast('As opções do sistema não foram carregadas. Recarregue a página e tente novamente.', 'error');
+                return;
+            }
             const doHistorico = [...new Set(state.todasAtividades.map(a => (a.assuntoInterno || '').trim()).filter(a => a && a !== '-' && a !== 'Sem Assunto'))];
             const novos = doHistorico.filter(a => !(state.OPCOES_SISTEMA.assuntosInternos || []).includes(a));
             if (novos.length === 0) {

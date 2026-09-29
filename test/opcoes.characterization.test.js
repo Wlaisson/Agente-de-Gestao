@@ -95,6 +95,54 @@ test('POST /api/opcoes salvar_tudo com dados validos -> 200', async () => {
   assert.deepEqual(body.data, novosDados);
 });
 
+// Regressao: uma falha transitoria na leitura do Supabase fazia o repositorio
+// gravar OPCOES_DEFAULT por cima dos assuntos cadastrados.
+function opcoesTableComErroDeLeitura(upserts) {
+  return (table, calls) => {
+    if (table !== 'opcoes_sistema') return { data: null, error: null };
+    if (calledWith(calls, 'single')) {
+      return { data: null, error: { code: '57014', message: 'canceling statement due to statement timeout' } };
+    }
+    upserts.push(calls);
+    return { data: null, error: null };
+  };
+}
+
+test('GET /api/opcoes com erro de leitura -> 503 e NAO sobrescreve com defaults', async () => {
+  if (fs.existsSync(opcoesFile)) fs.unlinkSync(opcoesFile);
+  const upserts = [];
+  ctx.supabaseAdmin.setFromHandler(opcoesTableComErroDeLeitura(upserts));
+  const res = await fetch(`${ctx.baseUrl}/api/opcoes`);
+  assert.equal(res.status, 503);
+  assert.equal(upserts.length, 0);
+});
+
+test('POST /api/opcoes adicionar_assunto com erro de leitura -> 503 e NAO grava', async () => {
+  if (fs.existsSync(opcoesFile)) fs.unlinkSync(opcoesFile);
+  const upserts = [];
+  ctx.supabaseAdmin.setFromHandler(opcoesTableComErroDeLeitura(upserts));
+  const res = await fetch(`${ctx.baseUrl}/api/opcoes`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ action: 'adicionar_assunto', item: 'NovoAssunto' })
+  });
+  assert.equal(res.status, 503);
+  assert.equal(upserts.length, 0);
+});
+
+test('GET /api/opcoes sem linha no banco (PGRST116) faz o seed inicial', async () => {
+  if (fs.existsSync(opcoesFile)) fs.unlinkSync(opcoesFile);
+  const upserts = [];
+  ctx.supabaseAdmin.setFromHandler((table, calls) => {
+    if (calledWith(calls, 'single')) return { data: null, error: { code: 'PGRST116' } };
+    upserts.push(calls);
+    return { data: null, error: null };
+  });
+  const res = await fetch(`${ctx.baseUrl}/api/opcoes`);
+  assert.equal(res.status, 200);
+  assert.equal(upserts.length, 1);
+});
+
 test('POST /api/opcoes acao invalida -> 400', async () => {
   ctx.supabaseAdmin.setFromHandler(opcoesTable(OPCOES_FIXTURE));
   const res = await fetch(`${ctx.baseUrl}/api/opcoes`, {
