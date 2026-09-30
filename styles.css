@@ -1526,6 +1526,29 @@
             font-weight: 600;
         }
 
+        .home-horas-paineis {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+            gap: 1.5rem 2rem;
+        }
+        .home-horas-painel {
+            min-width: 0;
+        }
+        .home-horas-painel-titulo {
+            margin: 0 0 0.75rem;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: var(--text-muted);
+        }
+        .home-horas-painel-conteudo {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.25rem;
+            align-items: center;
+        }
+
         .resumo-cards-grid {
             display: grid;
             grid-template-columns: 1fr;

@@ -223,13 +223,25 @@
                         <div class="dashboard-widget widget-col-8">
                             <div class="widget-header">
                                 <div class="widget-title">
-                                    <span><svg class="app-icon" viewBox="0 0 24 24"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg></span> Horas por Projeto (Semana)
+                                    <span><svg class="app-icon" viewBox="0 0 24 24"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg></span> Horas da Semana
                                 </div>
                                 <a class="widget-action-link" onclick="switchTab('semana-tab')">Ver Tabela Completa →</a>
                             </div>
-                            <div class="widget-body" style="display: flex; flex-wrap: wrap; gap: 2rem; align-items: center;">
-                                <div id="home-donut-chart-svg" style="display: flex; align-items: center; justify-content: center; min-width: 160px;"></div>
-                                <div id="home-donut-chart-legend" style="flex: 1; min-width: 200px; display: flex; flex-direction: column; gap: 0.5rem;"></div>
+                            <div class="widget-body home-horas-paineis">
+                                <div class="home-horas-painel">
+                                    <h4 class="home-horas-painel-titulo">Por Projeto</h4>
+                                    <div class="home-horas-painel-conteudo">
+                                        <div id="home-donut-chart-svg" style="display: flex; align-items: center; justify-content: center;"></div>
+                                        <div id="home-donut-chart-legend" style="flex: 1; min-width: 180px; display: flex; flex-direction: column; gap: 0.5rem;"></div>
+                                    </div>
+                                </div>
+                                <div class="home-horas-painel">
+                                    <h4 class="home-horas-painel-titulo">Por Assunto Interno</h4>
+                                    <div class="home-horas-painel-conteudo">
+                                        <div id="home-donut-assunto-svg" style="display: flex; align-items: center; justify-content: center;"></div>
+                                        <div id="home-donut-assunto-legend" style="flex: 1; min-width: 180px; display: flex; flex-direction: column; gap: 0.5rem;"></div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 

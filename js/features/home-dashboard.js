@@ -18,9 +18,27 @@ export function createHomeDashboardFeature({
   mostrarToast,
   formatarDataBR
 }) {
-  function renderizarDonutHome(projetosDados, totalSegundos) {
-    const chartDiv = document.getElementById('home-donut-chart-svg');
-    const legendDiv = document.getElementById('home-donut-chart-legend');
+  // A legenda so cabe 5 linhas; o que passar disso vira uma fatia "Outros"
+  // para que rosca e legenda continuem somando 100% do tempo da semana.
+  const LIMITE_ITENS_LEGENDA = 5;
+
+  function agruparExcedentes(dados) {
+    const ordenados = Object.entries(dados).sort((a, b) => b[1] - a[1]);
+    if (ordenados.length <= LIMITE_ITENS_LEGENDA + 1) return dados;
+    const visiveis = ordenados.slice(0, LIMITE_ITENS_LEGENDA);
+    const resto = ordenados.slice(LIMITE_ITENS_LEGENDA);
+    const agrupado = Object.fromEntries(visiveis);
+    agrupado[`Outros (${resto.length})`] = resto.reduce((soma, [, segs]) => soma + segs, 0);
+    return agrupado;
+  }
+
+  function renderizarDonutHome(projetosDados, totalSegundos, {
+    chartId = 'home-donut-chart-svg',
+    legendId = 'home-donut-chart-legend',
+    textoVazio = 'Nenhuma atividade com tempo registrada neste ciclo.'
+  } = {}) {
+    const chartDiv = document.getElementById(chartId);
+    const legendDiv = document.getElementById(legendId);
     if (!chartDiv || !legendDiv) return;
 
     if (!totalSegundos || totalSegundos === 0) {
@@ -30,13 +48,13 @@ export function createHomeDashboardFeature({
                         <text x="60" y="65" text-anchor="middle" fill="var(--text-muted)" font-size="11" font-weight="700">Sem dados</text>
                     </svg>
                 `;
-      legendDiv.innerHTML = `<div style="color: var(--text-muted); font-size: 0.82rem;">Nenhuma atividade com tempo registrada neste ciclo.</div>`;
+      legendDiv.innerHTML = `<div style="color: var(--text-muted); font-size: 0.82rem;">${textoVazio}</div>`;
       return;
     }
 
     const cores = ['#4f46e5', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6', '#06b6d4', '#ef4444', '#14b8a6'];
     const raio = 42;
-    const projsArray = calcularSegmentosDonut(projetosDados, totalSegundos, cores);
+    const projsArray = calcularSegmentosDonut(agruparExcedentes(projetosDados), totalSegundos, cores);
     const circlesHTML = construirCirculosSvg(projsArray, raio, '0.4s');
 
     chartDiv.innerHTML = `
@@ -47,7 +65,7 @@ export function createHomeDashboardFeature({
             `;
 
     let legendHTML = '';
-    projsArray.slice(0, 5).forEach(p => {
+    projsArray.forEach(p => {
       const horasStr = segundosParaTempoSemMeta(p.segundos);
       legendHTML += `
                     <div style="display: flex; align-items: center; justify-content: space-between; font-size: 0.82rem; margin-bottom: 0.35rem;">
@@ -113,6 +131,7 @@ export function createHomeDashboardFeature({
 
     let totalSegundos = 0;
     const projetosDados = {};
+    const assuntosDados = {};
 
     atividadesSemana.forEach(act => {
       const duracaoLimpa = limparTempo(act.tempo);
@@ -123,6 +142,10 @@ export function createHomeDashboardFeature({
         projetosDados[act.projeto] = 0;
       }
       projetosDados[act.projeto] += segs;
+
+      const assunto = (act.assuntoInterno || '').trim();
+      const chaveAssunto = assunto && assunto !== '-' ? assunto : 'Sem assunto';
+      assuntosDados[chaveAssunto] = (assuntosDados[chaveAssunto] || 0) + segs;
     });
 
     const horasStr = segundosParaTempoSemMeta(totalSegundos);
@@ -196,6 +219,10 @@ export function createHomeDashboardFeature({
     if (badgeCamp) badgeCamp.textContent = campAtivas;
 
     renderizarDonutHome(projetosDados, totalSegundos);
+    renderizarDonutHome(assuntosDados, totalSegundos, {
+      chartId: 'home-donut-assunto-svg',
+      legendId: 'home-donut-assunto-legend'
+    });
     renderizarAtividadesRecentesHome(atividadesSemana);
 
     if (forcado) {
