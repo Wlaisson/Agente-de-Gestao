@@ -4,7 +4,7 @@ export const TAB_TITULOS = {
   'home-tab': 'Início / Home Dashboard',
   'registro-tab': 'Criar Nova Atividade',
   'kanban-tab': 'Quadro Kanban',
-  'campanhas-tab': 'Gestão de Campanhas',
+  'assistente-tab': 'Assistente de Gestão',
   'reporter-tab': 'Agente Reporter 4',
   'semana-tab': 'Atividades da Semana',
   'resumo-tab': 'Resumo Executivo',

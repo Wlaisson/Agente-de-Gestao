@@ -7,23 +7,23 @@ import { tentarGerarEmbedding } from '../../../shared/embeddingHelpers.js';
 // webhook legado (fire-and-forget) - mesma ordem e mesmo tratamento de erro
 // de antes (nenhuma das 3 escritas e transacional entre si).
 export function makeAdicionarCardUseCase({ kanbanRepository, openAIGateway, embeddingsGateway }) {
-  return async function adicionarCard(body) {
+  // `userId` passou a ser aceito (2o parametro, opcional): o controller o
+  // extrai dos headers e o agente sempre o injeta. Sem ele o comportamento
+  // e identico ao anterior - card sem dono - para nao quebrar chamadas
+  // existentes do front que ainda nao enviam a identificacao.
+  return async function adicionarCard(body, userId = null) {
     const cards = await kanbanRepository.listarCards();
-    const novoCard = mapearNovoCard(body);
+    const novoCard = mapearNovoCard(body, userId);
 
     cards.unshift(novoCard);
     kanbanRepository.salvarCardsLocais(cards);
 
-    // NOTA (flag, ver schema-embeddings.sql): esta acao nao recebe userId
-    // (nem o body carrega um `userId`, nem o controller extrai de headers) -
-    // gap preexistente, nao corrigido aqui. obterCliente(undefined) cai no
-    // fallback de chave global/de outro usuario, ja flagueado em OpenAIGateway.js.
     const linha = {
       ...cardParaLinhaSupabase(novoCard),
       embedding: await tentarGerarEmbedding({
         openAIGateway,
         embeddingsGateway,
-        userId: undefined,
+        userId: novoCard.userId || undefined,
         texto: `${novoCard.titulo}\n${novoCard.descricao}`
       })
     };

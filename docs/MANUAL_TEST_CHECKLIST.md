@@ -59,10 +59,38 @@ final de toda a reorganização.
 - [ ] Transcrição de reunião extrai corretamente `minhas_tarefas` e ignora texto de preenchimento/placeholder da IA.
 - [ ] Tarefas extraídas aparecem na aba de tarefas/agenda (webhook legado do Google Apps Script).
 
-## Campanhas (somente localStorage, sem backend)
-- [ ] Criar/editar/excluir campanha persiste entre reloads da página (mesmo navegador).
-- [ ] Filtro de campanhas funciona.
+
+## Assistente de Gestão (A2A)
+
+### Interface, permissões e ciclo de vida do chat
+- [ ] Aba **Assistente** visível apenas para usuários com permissão na aba (`permissoes.abas` com `assistente`), respeitando RBAC.
+- [ ] Renderização correta de Markdown nas respostas do assistente: negrito (`**texto**`), listas com marcadores (`- item`), tabelas completas com cabeçalho/linhas (ex.: slide de IA) e separadores horizontais (`---`).
+- [ ] Botão **Nova conversa** limpa as mensagens na tela e reseta o `contextId` da sessão (nova tarefa/contexto).
+
+### Consultas de atividades e tempo (Analista)
+- [ ] Pergunta geral de tempo ("quanto tempo eu gastei essa semana?") devolve a soma exata de horas e minutos calculada pelo `TempoCalculator`, batendo com o total da aba **Semana**.
+- [ ] Resolução de entidade falada ("e na rede pro?") resolve deterministicamente para o projeto cadastrado (`Projetos - Rede Pró`).
+- [ ] Tolerância a termos aproximados com ambiguidade ("e na redi pro?") oferece alternativas cadastradas sem inventar projeto inexistente.
+- [ ] Consulta temporal abrangente ("o que eu fiz em setembro?") busca o período correto e lista as atividades consolidadas.
+
+### Formatação de apresentações (Redator)
+- [ ] "Gera o texto do weekly da [Cliente] dessa semana" gera cards por cliente com bullets no padrão estrito `**[Categoria]:** texto com números`.
+- [ ] Seção "Próximas etapas" do Weekly é preenchida consultando tarefas reais do Kanban (`listar_tarefas`).
+- [ ] "Monta o slide de agentes de catálogo da AI estratégica" gera tabela markdown formatada com colunas `Iniciativa | Responsável | Status | Prazo`, com status dentro do vocabulário fechado.
+- [ ] Validação de fidelidade do texto: comparar texto gerado com o slide real aprovado e registrar divergências para ajuste de prompt/exemplos no arquivo `redatorPromptConfig.js`.
+
+### Propostas e portão de escrita (Planejador e Registro)
+- [ ] Proposta de criação de tarefa ("anota uma tarefa pra revisar o catálogo da Wurth até sexta") exibe o cartão interativo de proposta com botões e **não grava nada** no banco antes da decisão humana.
+- [ ] Clicar no botão **Descartar** na proposta cancela a ação e confirma no banco/Supabase que nenhum card foi inserido.
+- [ ] Clicar no botão **Confirmar e salvar** grava o card com `user_id` preenchido do usuário logado e dados exatos aprovados.
+- [ ] Proposta de mover status da tarefa ("move a tarefa X para em andamento") exibe cartão com status anterior e novo; ao confirmar, atualiza o status revalidando dono do card.
+- [ ] Ambiguidade na confirmação textual ("sim, mas muda o prazo pra segunda") é classificada como ambígua, descartando a proposta anterior e gerando nova proposta com prazo corrigido, sem nunca gravar a primeira.
+- [ ] Proposta de registro de atividade ("registra aí: passei a manhã cadastrando SKU da Imdepa, umas 3 horas") gera proposta de atividade com alertas/avisos de campos faltantes quando necessário.
+
+### Rastreabilidade e diagnóstico
+- [ ] Em caso de comportamento inesperado ou erro, `GET /api/agentes/trace/<contextId>` retorna árvore de spans com agentes chamados, ferramentas executadas e tempos de resposta.
 
 ## Geral
 - [ ] Console do navegador sem erros novos em nenhuma aba.
 - [ ] `npm start` sobe localmente sem erro (ou o deploy de preview da Vercel builda sem erro).
+

@@ -4,9 +4,8 @@ uploads/
 .DS_Store
 recovery-codes.txt
 
-# Fallbacks locais gerados em runtime por interface-adapters/routes/legacyRoutes.js
-# (carregarOpcoes/salvarOpcoes e carregarCardsLocais/salvarCardsLocais) quando o
-# Supabase esta indisponivel - nao sao dados versionados.
+# Fallbacks locais gravados em runtime pelos repositorios de opcoes e kanban
+# quando o Supabase esta indisponivel - nao sao dados versionados.
 opcoes_sistema.json
 kanban_data.json
 

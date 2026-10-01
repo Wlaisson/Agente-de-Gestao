@@ -2,9 +2,14 @@ import { gerarIdCard } from '../../domain/entities/KanbanCard.js';
 
 // Normalizacao multi-nome-de-campo portada verbatim das acoes add_kanban/
 // edit_kanban de POST /api/kanban em server.js.
-export function mapearNovoCard(body) {
+export function mapearNovoCard(body, userId = null) {
   return {
     id: body.id || gerarIdCard(),
+    // Dono do card. Antes nunca era preenchido (lacuna flagueada em
+    // schema-embeddings.sql), o que deixava o Kanban inteiro sem escopo por
+    // usuario. Continua opcional para nao quebrar chamadas existentes que
+    // nao tem userId em maos.
+    userId: userId || body.userId || null,
     titulo: body.titulo || '',
     descricao: body.descricao || '',
     projeto: body.projeto || '',
@@ -20,7 +25,7 @@ export function mapearNovoCard(body) {
 }
 
 export function cardParaLinhaSupabase(card) {
-  return {
+  const linha = {
     id: card.id,
     titulo: card.titulo,
     descricao: card.descricao,
@@ -35,6 +40,13 @@ export function cardParaLinhaSupabase(card) {
     tempo: card.tempo,
     updated_at: new Date().toISOString()
   };
+
+  // So inclui a coluna quando ha dono conhecido. Mandar `user_id: null` num
+  // upsert apagaria o dono de um card que ja tivesse um - o oposto do que a
+  // correcao pretende.
+  if (card.userId) linha.user_id = card.userId;
+
+  return linha;
 }
 
 // edit_kanban/update_kanban: so aplica os campos presentes no body, tanto na

@@ -1,3 +1,9 @@
+// Mesma extracao usada nos controllers de atividades/relatorios. O Kanban
+// nao tinha nenhuma - por isso os cards nasciam sem dono.
+function obterUserId(req) {
+  return req.headers['x-user-id'] || req.headers['user-id'] || req.body?.userId || req.query?.userId || null;
+}
+
 // Controller fino: o dispatcher de acoes continua aqui (mesma forma da rota
 // original), so delegando cada branch para seu use-case.
 export function makeKanbanController({
@@ -10,7 +16,9 @@ export function makeKanbanController({
 }) {
   return {
     async listar(req, res) {
-      const data = await listarCards();
+      // Sem header de usuario o comportamento e o de antes (todos os cards):
+      // o front atual do Kanban nao envia identificacao e nao pode quebrar.
+      const data = await listarCards({ userId: obterUserId(req) });
       res.json({ status: 'success', data });
     },
 
@@ -18,13 +26,17 @@ export function makeKanbanController({
       const { action } = req.body;
 
       if (action === 'add_kanban') {
-        const novoCard = await adicionarCard(req.body);
+        const novoCard = await adicionarCard(req.body, obterUserId(req));
         return res.json({ status: 'success', id: novoCard.id, data: novoCard });
       }
 
       if (action === 'update_kanban_status') {
-        await atualizarStatusCard({ id: req.body.id, status: req.body.status });
-        return res.json({ status: 'success' });
+        try {
+          await atualizarStatusCard({ id: req.body.id, status: req.body.status, userId: obterUserId(req) });
+          return res.json({ status: 'success' });
+        } catch (e) {
+          return res.status(e.status || 400).json({ error: e.message });
+        }
       }
 
       if (action === 'delete_kanban') {

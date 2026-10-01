@@ -1,0 +1,479 @@
+[
+  {
+    "id": "caso-01-weekly-redepro-skus",
+    "titulo": "Weekly RedePRO — Cadastro de grade e SKU com contagem exata",
+    "formato": "weekly",
+    "pergunta": "gera o texto do weekly da RedePRO dessa semana",
+    "projeto": "Projetos - Rede Pró",
+    "semana": "22/09 a 28/09",
+    "atividadesDeEntrada": [
+      {
+        "id": "atv-101",
+        "data": "2026-09-23",
+        "semana": "22/09 a 28/09",
+        "titulo": "Cadastro de Grade de SKUs",
+        "atividade": "Realizado o cadastro de 1 grade com 5 SKUs no sistema conforme solicitado em card no ClickUp.",
+        "projeto": "Projetos - Rede Pró",
+        "assuntoInterno": "Cadastro de Produtos",
+        "classNivel1": "Operacional",
+        "classNivel2": "N2",
+        "tempo": "02:30:00"
+      },
+      {
+        "id": "atv-102",
+        "data": "2026-09-24",
+        "semana": "22/09 a 28/09",
+        "titulo": "Cadastro de SKU N2",
+        "atividade": "Realizado o cadastro de 1 SKU com imagem (nível N2) conforme solicitado em card no ClickUp.",
+        "projeto": "Projetos - Rede Pró",
+        "assuntoInterno": "Cadastro de Produtos",
+        "classNivel1": "Operacional",
+        "classNivel2": "N2",
+        "tempo": "01:00:00"
+      }
+    ],
+    "tarefasDeEntrada": [],
+    "saidaEsperada": "<!-- [GABARITO REAL: Cole aqui o seu texto real aprovado do Weekly da RedePRO] -->\n**RESUMO DA SEMANA — RedePRO**\n\n- **[Cadastro de Grade]:** Realizado o cadastro de 1 grade com 5 SKUs conforme solicitado em card no ClickUp.\n- **[Cadastro de SKU]:** Realizado o cadastro de 1 SKU com imagem (nível N2) conforme solicitado em card no ClickUp.\n\n**Tasks Concluídas:** 02\n\n---\n_A confirmar por você: SLA Entregue e Validações QA — não saem dos registros de atividade._",
+    "criterios": {
+      "formato": "weekly",
+      "numerosObrigatorios": [1, 5],
+      "statusPermitidos": ["Concluído", "Em Andamento", "A Iniciar", "Agendado"],
+      "exigirFormatoBullet": true,
+      "proibirPrimeiraPessoa": true,
+      "exigirMarcacaoAConfirmar": true
+    }
+  },
+  {
+    "id": "caso-02-weekly-imdepa-consolidacao",
+    "titulo": "Weekly Imdepa — Consolidação de atualizações diárias com soma de produtos",
+    "formato": "weekly",
+    "pergunta": "monta o resumo da semana da Imdepa",
+    "projeto": "Projetos - Imdepa",
+    "semana": "22/09 a 28/09",
+    "atividadesDeEntrada": [
+      {
+        "id": "atv-201",
+        "data": "2026-09-22",
+        "semana": "22/09 a 28/09",
+        "titulo": "Carga diária de catálogo Imdepa",
+        "atividade": "Atualizações diárias de produtos: 400 Produtos Novos, 300 Produtos Alterados e 5 Produtos Inativos processados.",
+        "projeto": "Projetos - Imdepa",
+        "assuntoInterno": "Carga de Catálogo",
+        "classNivel1": "Operacional",
+        "classNivel2": "N1",
+        "tempo": "02:00:00"
+      },
+      {
+        "id": "atv-202",
+        "data": "2026-09-23",
+        "semana": "22/09 a 28/09",
+        "titulo": "Carga diária de catálogo Imdepa",
+        "atividade": "Atualizações diárias de produtos: 574 Produtos Novos, 266 Produtos Alterados e 7 Produtos Inativos processados.",
+        "projeto": "Projetos - Imdepa",
+        "assuntoInterno": "Carga de Catálogo",
+        "classNivel1": "Operacional",
+        "classNivel2": "N1",
+        "tempo": "02:30:00"
+      },
+      {
+        "id": "atv-203",
+        "data": "2026-09-25",
+        "semana": "22/09 a 28/09",
+        "titulo": "Alteração Esteiras Draper",
+        "atividade": "Inclusão do número de guias em nomes, descrição e especificações técnicas de 28 SKUs de esteiras Draper.",
+        "projeto": "Projetos - Imdepa",
+        "assuntoInterno": "Enriquecimento de Dados",
+        "classNivel1": "Operacional",
+        "classNivel2": "N2",
+        "tempo": "03:15:00"
+      }
+    ],
+    "tarefasDeEntrada": [],
+    "saidaEsperada": "<!-- [GABARITO REAL: Cole aqui o seu texto real aprovado do Weekly da Imdepa] -->\n**RESUMO DA SEMANA — Imdepa**\n\n- **[Atualizações Diárias]:** 974 Produtos Novos, 566 Produtos Alterados, 12 Produtos Inativos.\n- **[Alteração Esteiras Draper]:** Inclusão do nº de guias em nomes, descrição e especificações — 28 SKUs.\n\n**Tasks Concluídas:** 03\n\n---\n_A confirmar por você: SLA Entregue e Validações QA — não saem dos registros de atividade._",
+    "criterios": {
+      "formato": "weekly",
+      "numerosObrigatorios": [28],
+      "statusPermitidos": ["Concluído", "Em Andamento", "A Iniciar", "Agendado"],
+      "exigirFormatoBullet": true,
+      "proibirPrimeiraPessoa": true
+    }
+  },
+  {
+    "id": "caso-03-weekly-tracbel-grafia-prosis",
+    "titulo": "Weekly Tracbel — Correção automática de 'Process' para 'Prosis' e scraping",
+    "formato": "weekly",
+    "pergunta": "gera o texto do weekly da Tracbel dessa semana",
+    "projeto": "Projetos - Tracbel",
+    "semana": "22/09 a 28/09",
+    "atividadesDeEntrada": [
+      {
+        "id": "atv-301",
+        "data": "2026-09-24",
+        "semana": "22/09 a 28/09",
+        "titulo": "Scraping de Catálogo",
+        "atividade": "Extração automatizada de dados no sistema Process, obtendo 45 novos modelos de peças para a Tracbel.",
+        "projeto": "Projetos - Tracbel",
+        "assuntoInterno": "Scraping",
+        "classNivel1": "Técnico",
+        "classNivel2": "Automação",
+        "tempo": "04:00:00"
+      }
+    ],
+    "tarefasDeEntrada": [],
+    "saidaEsperada": "<!-- [GABARITO REAL: Cole aqui o seu texto real aprovado do Weekly da Tracbel] -->\n**RESUMO DA SEMANA — Tracbel**\n\n- **[Scraping Prosis]:** Extração automatizada de dados no sistema Prosis, com obtenção de 45 novos modelos de peças.\n\n**Tasks Concluídas:** 01\n\n---\n_A confirmar por você: SLA Entregue e Validações QA — não saem dos registros de atividade._",
+    "criterios": {
+      "formato": "weekly",
+      "numerosObrigatorios": [45],
+      "termosObrigatorios": ["Prosis"],
+      "termosProibidos": ["Process"],
+      "statusPermitidos": ["Concluído", "Em Andamento", "A Iniciar", "Agendado"],
+      "exigirFormatoBullet": true,
+      "proibirPrimeiraPessoa": true
+    }
+  },
+  {
+    "id": "caso-04-weekly-wurth-enriquecimento",
+    "titulo": "Weekly Wurth — Enriquecimento de atributos e imagens sem alucinar números",
+    "formato": "weekly",
+    "pergunta": "faz o weekly da Wurth dessa semana",
+    "projeto": "Projetos - Wurth",
+    "semana": "22/09 a 28/09",
+    "atividadesDeEntrada": [
+      {
+        "id": "atv-401",
+        "data": "2026-09-22",
+        "semana": "22/09 a 28/09",
+        "titulo": "Revisão e Enriquecimento Wurth",
+        "atividade": "Enriquecimento de atributos técnicos e validação de imagens da linha de fixadores automotivos.",
+        "projeto": "Projetos - Wurth",
+        "assuntoInterno": "Enriquecimento de Dados",
+        "classNivel1": "Operacional",
+        "classNivel2": "N2",
+        "tempo": "03:00:00"
+      }
+    ],
+    "tarefasDeEntrada": [],
+    "saidaEsperada": "<!-- [GABARITO REAL: Cole aqui o seu texto real aprovado do Weekly da Wurth] -->\n**RESUMO DA SEMANA — Wurth**\n\n- **[Enriquecimento de Dados]:** Realizado o enriquecimento de atributos técnicos e validação de imagens da linha de fixadores automotivos.\n\n**Tasks Concluídas:** 01\n\n---\n_A confirmar por você: SLA Entregue e Validações QA — não saem dos registros de atividade._",
+    "criterios": {
+      "formato": "weekly",
+      "detectorAlucinacaoNumerica": true,
+      "statusPermitidos": ["Concluído", "Em Andamento", "A Iniciar", "Agendado"],
+      "exigirFormatoBullet": true,
+      "proibirPrimeiraPessoa": true
+    }
+  },
+  {
+    "id": "caso-05-weekly-com-proximas-etapas-kanban",
+    "titulo": "Weekly com Próximas Etapas — Integração com tarefas do Kanban",
+    "formato": "weekly",
+    "pergunta": "gera o weekly da RedePRO com próximas etapas",
+    "projeto": "Projetos - Rede Pró",
+    "semana": "22/09 a 28/09",
+    "atividadesDeEntrada": [
+      {
+        "id": "atv-501",
+        "data": "2026-09-25",
+        "semana": "22/09 a 28/09",
+        "titulo": "Cadastro de produtos",
+        "atividade": "Cadastro de 10 novos SKUs na linha pesada.",
+        "projeto": "Projetos - Rede Pró",
+        "assuntoInterno": "Cadastro de Produtos",
+        "classNivel1": "Operacional",
+        "classNivel2": "N1",
+        "tempo": "02:00:00"
+      }
+    ],
+    "tarefasDeEntrada": [
+      {
+        "id": "card-01",
+        "titulo": "Revisão das imagens do catálogo",
+        "projeto": "Projetos - Rede Pró",
+        "status": "Em Andamento",
+        "prazo": "2026-10-05"
+      },
+      {
+        "id": "card-02",
+        "titulo": "Validação de dados fiscais NCM",
+        "projeto": "Projetos - Rede Pró",
+        "status": "A Fazer",
+        "prazo": "2026-10-10"
+      }
+    ],
+    "saidaEsperada": "<!-- [GABARITO REAL: Cole aqui o seu texto real aprovado do Weekly com próximas etapas] -->\n**RESUMO DA SEMANA — RedePRO**\n\n- **[Cadastro de SKUs]:** Realizado o cadastro de 10 novos SKUs na linha pesada.\n\n**Tasks Concluídas:** 01\n\n**Próximas etapas**\n\n| Atividade Planejada | Resp. | Prazo | Status |\n| --- | --- | --- | --- |\n| Revisão das imagens do catálogo | — | 2026-10-05 | Em Andamento |\n| Validação de dados fiscais NCM | — | 2026-10-10 | A Iniciar |\n\n---\n_A confirmar por você: SLA Entregue e Validações QA — não saem dos registros de atividade._",
+    "criterios": {
+      "formato": "weekly",
+      "numerosObrigatorios": [10],
+      "statusPermitidos": ["Concluído", "Em Andamento", "A Iniciar", "Agendado"],
+      "exigirFormatoBullet": true,
+      "proibirPrimeiraPessoa": true
+    }
+  },
+  {
+    "id": "caso-06-ai-estrategica-agentes-catalogo",
+    "titulo": "AI Estratégica — Slide Agentes de Catálogo (Tabela e Próximos Passos)",
+    "formato": "ai-estrategica",
+    "pergunta": "monta o slide de agentes de catálogo da AI estratégica",
+    "projeto": "Interno",
+    "semana": "22/09 a 28/09",
+    "atividadesDeEntrada": [
+      {
+        "id": "atv-601",
+        "data": "2026-09-23",
+        "semana": "22/09 a 28/09",
+        "titulo": "Arquitetura do agente de Especificações",
+        "atividade": "Desenvolvimento de arquitetura do agente para processamento especializado em Especificações utilizando modelo BGE-M3.",
+        "projeto": "Interno",
+        "assuntoInterno": "Agentes de Catálogo",
+        "classNivel1": "Desenvolvimento",
+        "classNivel2": "IA",
+        "tempo": "06:00:00"
+      },
+      {
+        "id": "atv-602",
+        "data": "2026-09-24",
+        "semana": "22/09 a 28/09",
+        "titulo": "Mapeamento do agente de Cross Reference",
+        "atividade": "Mapeamento do fluxo operacional do agente especializado em Cross Reference e testes de data matching com a base CWS.",
+        "projeto": "Interno",
+        "assuntoInterno": "Agentes de Catálogo",
+        "classNivel1": "Desenvolvimento",
+        "classNivel2": "IA",
+        "tempo": "05:00:00"
+      }
+    ],
+    "tarefasDeEntrada": [
+      {
+        "id": "card-ia-01",
+        "titulo": "Testes de validação BGE-M3 em categorização",
+        "projeto": "Interno",
+        "status": "Em Andamento",
+        "prazo": "2026-10-03"
+      }
+    ],
+    "saidaEsperada": "<!-- [GABARITO REAL: Cole aqui o seu texto real aprovado do Slide de Agentes de Catálogo] -->\n**AGENTES DE CATÁLOGO**\n\n**Tabela de iniciativas**\n\n| Iniciativa | Responsável | Status | Prazo |\n| --- | --- | --- | --- |\n| Desenvolvimento de arquitetura do agente para processamento especializado em Especificações | Wlaisson \\| Gustavo | Em progresso | — |\n| Desenvolvimento de arquitetura do agente para processamento especializado em Cross Reference | Wlaisson \\| Gustavo | Em progresso | — |\n\n**Próximos passos**\n\n- **Agente de Especificações (Em Desenvolvimento):** Avanço na estruturação do sistema com condução de testes utilizando modelo BGE-M3.\n- **Agente de Cross Reference (Em Desenvolvimento):** Mapeamento do fluxo operacional com foco no refinamento do cruzamento de dados com a base CWS.\n\n**Definições e pendências**\n\n- Nenhuma",
+    "criterios": {
+      "formato": "ai-estrategica",
+      "statusPermitidos": ["Concluído", "Em progresso", "Pausado", "Em backlog"],
+      "statusProibidos": ["Em andamento", "Fazendo", "Finalizado", "Em aberto"],
+      "exigirTabelaMarkdown": true,
+      "proibirPrimeiraPessoa": true
+    }
+  },
+  {
+    "id": "caso-07-ai-estrategica-vocabulario-fechado",
+    "titulo": "AI Estratégica — Vocabulário fechado de status na tabela",
+    "formato": "ai-estrategica",
+    "pergunta": "atualiza a tabela da AI estratégica para os agentes de catálogo",
+    "projeto": "Interno",
+    "semana": "22/09 a 28/09",
+    "atividadesDeEntrada": [
+      {
+        "id": "atv-701",
+        "data": "2026-09-22",
+        "semana": "22/09 a 28/09",
+        "titulo": "Módulo de Extração de Atributos",
+        "atividade": "Concluída a homologação do módulo de extração automática de atributos obrigatórios.",
+        "projeto": "Interno",
+        "assuntoInterno": "Agentes de Catálogo",
+        "classNivel1": "Desenvolvimento",
+        "classNivel2": "IA",
+        "tempo": "04:00:00"
+      },
+      {
+        "id": "atv-702",
+        "data": "2026-09-25",
+        "semana": "22/09 a 28/09",
+        "titulo": "Integração Vector Store BGE",
+        "atividade": "Desenvolvimento contínuo da indexação de embeddings BGE no Supabase pgvector.",
+        "projeto": "Interno",
+        "assuntoInterno": "Agentes de Catálogo",
+        "classNivel1": "Desenvolvimento",
+        "classNivel2": "IA",
+        "tempo": "03:30:00"
+      }
+    ],
+    "tarefasDeEntrada": [],
+    "saidaEsperada": "<!-- [GABARITO REAL: Cole aqui o seu texto real aprovado da tabela de iniciativas] -->\n| Iniciativa | Responsável | Status | Prazo |\n| --- | --- | --- | --- |\n| Homologação do módulo de extração automática de atributos | Wlaisson \\| Gustavo | Concluído | — |\n| Desenvolvimento da indexação de embeddings BGE no Supabase | Wlaisson \\| Gustavo | Em progresso | — |",
+    "criterios": {
+      "formato": "ai-estrategica",
+      "statusPermitidos": ["Concluído", "Em progresso", "Pausado", "Em backlog"],
+      "statusProibidos": ["Em andamento", "Finalizado", "Em aberto", "Pronto"],
+      "exigirTabelaMarkdown": true,
+      "proibirPrimeiraPessoa": true
+    }
+  },
+  {
+    "id": "caso-08-weekly-multiplas-atividades-sem-alucinacao",
+    "titulo": "Weekly — Atividades sem número explícito não devem gerar alucinação",
+    "formato": "weekly",
+    "pergunta": "gera o texto do weekly da Imdepa dessa semana",
+    "projeto": "Projetos - Imdepa",
+    "semana": "22/09 a 28/09",
+    "atividadesDeEntrada": [
+      {
+        "id": "atv-801",
+        "data": "2026-09-23",
+        "semana": "22/09 a 28/09",
+        "titulo": "Alinhamento de taxonomia",
+        "atividade": "Revisão conceitual da taxonomia de rolamentos com a equipe técnica da Imdepa.",
+        "projeto": "Projetos - Imdepa",
+        "assuntoInterno": "Alinhamento Técnico",
+        "classNivel1": "Gestão",
+        "classNivel2": "Reunião Técnica",
+        "tempo": "01:30:00"
+      },
+      {
+        "id": "atv-802",
+        "data": "2026-09-24",
+        "semana": "22/09 a 28/09",
+        "titulo": "Ajuste de descrições de produtos",
+        "atividade": "Padronização das descrições de esteiras e mancais para publicação.",
+        "projeto": "Projetos - Imdepa",
+        "assuntoInterno": "Enriquecimento de Dados",
+        "classNivel1": "Operacional",
+        "classNivel2": "N1",
+        "tempo": "02:00:00"
+      }
+    ],
+    "tarefasDeEntrada": [],
+    "saidaEsperada": "<!-- [GABARITO REAL: Cole aqui o seu texto real aprovado para a Imdepa sem números inventados] -->\n**RESUMO DA SEMANA — Imdepa**\n\n- **[Alinhamento Técnico]:** Realizada a revisão conceitual da taxonomia de rolamentos com a equipe técnica.\n- **[Padronização de Catálogo]:** Concluída a padronização das descrições de esteiras e mancais para publicação.\n\n**Tasks Concluídas:** 02\n\n---\n_A confirmar por você: SLA Entregue e Validações QA — não saem dos registros de atividade._",
+    "criterios": {
+      "formato": "weekly",
+      "detectorAlucinacaoNumerica": true,
+      "statusPermitidos": ["Concluído", "Em Andamento", "A Iniciar", "Agendado"],
+      "exigirFormatoBullet": true,
+      "proibirPrimeiraPessoa": true
+    }
+  },
+  {
+    "id": "caso-09-borda-projeto-sem-atividades",
+    "titulo": "Borda — Projeto sem atividades registradas na semana",
+    "formato": "borda",
+    "pergunta": "faz o weekly da Campneus",
+    "projeto": "Projetos - Campneus",
+    "semana": "22/09 a 28/09",
+    "atividadesDeEntrada": [],
+    "tarefasDeEntrada": [],
+    "saidaEsperada": "<!-- [GABARITO REAL: Cole aqui a mensagem padrão que você espera quando um cliente não tem atividades] -->\nNão há atividade registrada para Campneus nesta semana (22/09 a 28/09), então não tenho o que reportar no slide.\n\nOs projetos com atividade na semana foram: Projetos - Rede Pró, Projetos - Imdepa e Projetos - Wurth. Quer o texto de algum deles?",
+    "criterios": {
+      "formato": "borda",
+      "termosObrigatorios": ["não há atividade", "Campneus"],
+      "proibirAlucinacaoSlide": true
+    }
+  },
+  {
+    "id": "caso-10-weekly-exclusao-daily-reuniao-interna",
+    "titulo": "Weekly — Exclusão obrigatória de Daily e reuniões internas no slide do cliente",
+    "formato": "weekly",
+    "pergunta": "gera o weekly da Wurth dessa semana",
+    "projeto": "Projetos - Wurth",
+    "semana": "22/09 a 28/09",
+    "atividadesDeEntrada": [
+      {
+        "id": "atv-1001",
+        "data": "2026-09-22",
+        "semana": "22/09 a 28/09",
+        "titulo": "Daily e alinhamento interno da equipe",
+        "atividade": "Participação em Daily de status da equipe e apresentação interna de métricas.",
+        "projeto": "Projetos - Wurth",
+        "assuntoInterno": "Reunião Interna",
+        "classNivel1": "Gestão",
+        "classNivel2": "Interno",
+        "tempo": "01:00:00"
+      },
+      {
+        "id": "atv-1002",
+        "data": "2026-09-23",
+        "semana": "22/09 a 28/09",
+        "titulo": "Higienização de SKUs Wurth",
+        "atividade": "Higienização e saneamento de dados de 150 SKUs da família de parafusos sextavados.",
+        "projeto": "Projetos - Wurth",
+        "assuntoInterno": "Saneamento de Catálogo",
+        "classNivel1": "Operacional",
+        "classNivel2": "N1",
+        "tempo": "03:30:00"
+      }
+    ],
+    "tarefasDeEntrada": [],
+    "saidaEsperada": "<!-- [GABARITO REAL: Cole aqui o seu texto real aprovado garantindo que reuniões internas não aparecem] -->\n**RESUMO DA SEMANA — Wurth**\n\n- **[Saneamento de Catálogo]:** Realizada a higienização e saneamento de dados de 150 SKUs da família de parafusos sextavados.\n\n**Tasks Concluídas:** 01\n\n---\n_A confirmar por você: SLA Entregue e Validações QA — não saem dos registros de atividade._",
+    "criterios": {
+      "formato": "weekly",
+      "numerosObrigatorios": [150],
+      "termosProibidos": ["Daily", "alinhamento interno", "reunião interna"],
+      "statusPermitidos": ["Concluído", "Em Andamento", "A Iniciar", "Agendado"],
+      "exigirFormatoBullet": true,
+      "proibirPrimeiraPessoa": true
+    }
+  },
+  {
+    "id": "caso-11-ai-estrategica-responsavel-dupla",
+    "titulo": "AI Estratégica — Formatação da coluna Responsável com barra 'Wlaisson | Gustavo'",
+    "formato": "ai-estrategica",
+    "pergunta": "monta o slide de agentes de catálogo",
+    "projeto": "Interno",
+    "semana": "22/09 a 28/09",
+    "atividadesDeEntrada": [
+      {
+        "id": "atv-1101",
+        "data": "2026-09-24",
+        "semana": "22/09 a 28/09",
+        "titulo": "Agente de categorização semântica",
+        "atividade": "Desenvolvimento do pipeline de categorização semântica de SKUs não estruturados.",
+        "projeto": "Interno",
+        "assuntoInterno": "Agentes de Catálogo",
+        "classNivel1": "Desenvolvimento",
+        "classNivel2": "IA",
+        "tempo": "05:00:00"
+      }
+    ],
+    "tarefasDeEntrada": [],
+    "saidaEsperada": "<!-- [GABARITO REAL: Cole aqui o seu texto real do slide com responsável em dupla] -->\n| Iniciativa | Responsável | Status | Prazo |\n| --- | --- | --- | --- |\n| Desenvolvimento do pipeline de categorização semântica de SKUs | Wlaisson \\| Gustavo | Em progresso | — |",
+    "criterios": {
+      "formato": "ai-estrategica",
+      "termosObrigatorios": ["Wlaisson"],
+      "statusPermitidos": ["Concluído", "Em progresso", "Pausado", "Em backlog"],
+      "exigirTabelaMarkdown": true,
+      "proibirPrimeiraPessoa": true
+    }
+  },
+  {
+    "id": "caso-12-weekly-pontos-atencao-kanban-atraso",
+    "titulo": "Weekly — Pontos de Atenção & Riscos citando tarefa em atraso do Kanban",
+    "formato": "weekly",
+    "pergunta": "gera o weekly da RedePRO com pontos de atenção",
+    "projeto": "Projetos - Rede Pró",
+    "semana": "22/09 a 28/09",
+    "atividadesDeEntrada": [
+      {
+        "id": "atv-1201",
+        "data": "2026-09-24",
+        "semana": "22/09 a 28/09",
+        "titulo": "Validação de dados técnicos",
+        "atividade": "Validação técnica de 8 novos modelos de catálogos fornecidos pelo cliente.",
+        "projeto": "Projetos - Rede Pró",
+        "assuntoInterno": "Validação Técnica",
+        "classNivel1": "Operacional",
+        "classNivel2": "N1",
+        "tempo": "02:00:00"
+      }
+    ],
+    "tarefasDeEntrada": [
+      {
+        "id": "card-atrasado-01",
+        "titulo": "Envio do lote complementar de especificações da RedePRO",
+        "projeto": "Projetos - Rede Pró",
+        "status": "Em Andamento",
+        "prazo": "2026-09-20"
+      }
+    ],
+    "saidaEsperada": "<!-- [GABARITO REAL: Cole aqui o seu texto real com pontos de atenção derivados do Kanban] -->\n**RESUMO DA SEMANA — RedePRO**\n\n- **[Validação Técnica]:** Realizada a validação técnica de 8 novos modelos de catálogos fornecidos pelo cliente.\n\n**Tasks Concluídas:** 01\n\n**Pontos de Atenção & Riscos**\n\n- **Atraso no Envio:** A tarefa \"Envio do lote complementar de especificações da RedePRO\" está com prazo vencido desde 20/09.\n\n---\n_A confirmar por você: SLA Entregue e Validações QA — não saem dos registros de atividade._",
+    "criterios": {
+      "formato": "weekly",
+      "numerosObrigatorios": [8],
+      "termosObrigatorios": ["Pontos de Atenção", "Envio do lote complementar"],
+      "statusPermitidos": ["Concluído", "Em Andamento", "A Iniciar", "Agendado"],
+      "exigirFormatoBullet": true,
+      "proibirPrimeiraPessoa": true
+    }
+  }
+]

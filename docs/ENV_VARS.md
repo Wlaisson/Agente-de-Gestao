@@ -19,8 +19,25 @@ de `supabaseClient.js` — ou seja, o processo falha ao subir, não apenas em ru
 
 | Variável | Obrigatória | Uso |
 |---|---|---|
-| `OPENAI_API_KEY` | Não (mas necessária para as rotas de IA funcionarem) | Cria o cliente OpenAI global (`openaiGlobal`). Se ausente, cada usuário precisa ter sua própria chave configurada em `setup_usuario` (ver `/api/setup`); na ausência de ambas, `obterClienteOpenAI` cai num terceiro nível que pode usar a chave de **outro** usuário qualquer com uma chave cadastrada (ver call-out de segurança no plano de reorganização). |
+| `OPENAI_API_KEY` | Não (mas necessária para as rotas de IA funcionarem) | Cria o cliente OpenAI global (`openaiGlobal`). Se ausente, cada usuário precisa ter sua própria chave configurada em `setup_usuario` (ver `/api/setup`). |
 | `OPENAI_MODEL` | Não | Sobrepõe o primeiro modelo da lista de fallback (`MODELOS`); padrão `gpt-5-nano`. |
+| `PERMITIR_CHAVE_OPENAI_COMPARTILHADA` | Não | Padrão **desligado**. Quando `true`, restaura o antigo terceiro nível de fallback de `obterCliente`, que usa a chave OpenAI de **outro** usuário qualquer quando não há chave global nem chave própria — ou seja, cobra o custo na conta de um terceiro. Com o agente conversacional (várias chamadas de modelo por pergunta) isso deixa de ser pontual e vira custo recorrente; por isso passou a ser opt-in explícito. |
+
+## Sistema de agentes (A2A)
+
+| Variável | Obrigatória | Uso |
+|---|---|---|
+| `AGENTES_REMOTOS` | Não | Lista de agentes que rodam como **serviço separado**, no formato `id@url`, separados por vírgula (ex.: `redator@https://redator.exemplo.com,catalogo@https://core.cws/agents`). Vazio (padrão) = todos os agentes rodam no mesmo processo. É a chave para promover um especialista a deploy próprio sem alterar código. |
+| `A2A_TOKEN_SERVICO` | Recomendada se `AGENTES_REMOTOS` for usada | Segredo compartilhado entre os serviços de agente. Quando definida, uma chamada a `/a2a` que declara o usuário pelo corpo (em vez do header de sessão) precisa apresentar o header `x-a2a-service-token`. Sem isso, quem alcançar a URL consulta dados de qualquer usuário informando o id dele. |
+| `TRACE_AGENTES` | Não | `true` imprime no console cada span de execução dos agentes (delegação, ferramenta, chamada de modelo) com a duração. Útil para depurar por que o agente respondeu o que respondeu. A árvore também fica disponível em `GET /api/agentes/trace/:contextId`. |
+
+### Migração obrigatória
+
+O sistema de agentes **funciona sem** aplicar `schema-a2a.sql`, mas as tarefas e a
+auditoria ficam apenas em memória do processo. Em serverless com mais de uma
+instância isso quebra o fluxo de confirmação de escrita: a confirmação pode chegar
+numa instância que nunca viu a proposta. Aplique `schema-a2a.sql` no SQL Editor do
+Supabase antes de uso real.
 
 ## Deploy / runtime
 

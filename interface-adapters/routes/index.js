@@ -49,6 +49,12 @@ import { createTranscricaoRoutes } from './transcricaoRoutes.js';
 import { createRelatoriosRoutes } from './relatoriosRoutes.js';
 import { createSetupRoutes } from './setupRoutes.js';
 import { createReuniaoRoutes } from './reuniaoRoutes.js';
+import { createSupabaseTarefaA2ARepository } from '../repositories/SupabaseTarefaA2ARepository.js';
+import { createSupabaseAuditoriaRepository } from '../repositories/SupabaseAuditoriaRepository.js';
+import { comporSistemaDeAgentes } from '../../application/agents/composicao.js';
+import { createA2AJsonRpcServer } from '../a2a/A2AJsonRpcServer.js';
+import { makeAgentesController } from '../controllers/agentesController.js';
+import { createAgentesRoutes } from './agentesRoutes.js';
 
 // Composition root: monta repositories -> use-cases -> controllers -> routers
 // para todos os 9 dominios do backend. legacyRoutes.js (a rede de seguranca
@@ -110,6 +116,42 @@ export function createRoutes() {
   const setupController = makeSetupController({ obterConfigUsuario, salvarConfigUsuario });
   const reuniaoController = makeReuniaoController({ processarReuniao });
 
+  // --- Sistema multiagente (A2A) ----------------------------------------
+  // Montado sobre os MESMOS use-cases acima: os agentes nao tem caminho
+  // proprio ate o banco. `openAIGateway.obterCliente` continua sendo o unico
+  // resolvedor de credencial, entao a chave e o modelo usados pelo agente
+  // sao os que o usuario configurou na aba Setup.
+  const tarefaA2ARepository = createSupabaseTarefaA2ARepository({ supabaseAdmin });
+  const auditoriaRepository = createSupabaseAuditoriaRepository({ supabaseAdmin });
+
+  const { tracer, agentRegistry, taskManager } = comporSistemaDeAgentes({
+    listarAtividades,
+    criarAtividade,
+    listarCards,
+    adicionarCard,
+    atualizarStatusCard,
+    obterOpcoes,
+    obterConfigUsuario,
+    atividadeRepository,
+    tarefaRepository: tarefaA2ARepository,
+    auditoriaRepository,
+    openAIGateway,
+    embeddingsGateway
+  });
+
+  const a2aServer = createA2AJsonRpcServer({
+    taskManager,
+    agentRegistry,
+    resolverOpenAiConfig: (userId) => openAIGateway.obterCliente(userId)
+  });
+
+  const agentesController = makeAgentesController({
+    taskManager,
+    agentRegistry,
+    openAIGateway,
+    tracer
+  });
+
   const router = Router();
   router.use(createAuthRoutes({ authController }));
   router.use(createAdminRoutes({ adminController, verificarAdmin }));
@@ -120,5 +162,6 @@ export function createRoutes() {
   router.use(createRelatoriosRoutes({ relatoriosController }));
   router.use(createSetupRoutes({ setupController }));
   router.use(createReuniaoRoutes({ reuniaoController }));
+  router.use(createAgentesRoutes({ agentesController, a2aServer, agentRegistry }));
   return router;
 }

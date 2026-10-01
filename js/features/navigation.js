@@ -11,14 +11,17 @@ import { TAB_TITULOS } from '../ui/sidebar.js';
 export function createNavigationFeature({
   mostrarToast,
   atualizarHomeDashboard,
-  renderizarCampanhas,
   carregarDadosPlanilha,
   carregarOpcoesSistema,
   popularTodosSelects,
   carregarTarefas,
   carregarKanban,
   carregarSetupUsuario,
-  adminUsers
+  adminUsers,
+  // Opcional: a aba do assistente so precisa preparar os listeners do
+  // composer na primeira abertura. Default no-op para nao obrigar quem
+  // monta a navegacao (ex.: testes) a injetar a feature.
+  inicializarAssistente = () => {}
 }) {
   function switchTab(tabId) {
     const user = obterUsuarioLogado();
@@ -62,8 +65,6 @@ export function createNavigationFeature({
 
     if (tabId === 'home-tab') {
       atualizarHomeDashboard();
-    } else if (tabId === 'campanhas-tab') {
-      renderizarCampanhas();
     } else if (tabId === 'semana-tab') {
       carregarDadosPlanilha();
     } else if (tabId === 'gerenciar-tab') {
@@ -78,6 +79,8 @@ export function createNavigationFeature({
       carregarSetupUsuario();
     } else if (tabId === 'usuarios-admin-tab') {
       adminUsers.carregarListaUsuariosAdmin(true);
+    } else if (tabId === 'assistente-tab') {
+      inicializarAssistente();
     }
   }
 

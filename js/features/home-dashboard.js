@@ -6,13 +6,12 @@ import { tempoParaSegundos, segundosParaTempoSemMeta } from '../domain/tempo.js'
 // atualizarHomeDashboard + seus dois renderizadores auxiliares, portados
 // verbatim. Dependencias que ja viraram modulos proprios (state, icons,
 // donutChart, tempo) sao importadas direto; o resto (obterTextoSemanaDeData,
-// limparTempo, carregarCampanhas, carregarDadosPlanilha, atualizarDashboard,
+// limparTempo, carregarDadosPlanilha, atualizarDashboard,
 // mostrarToast, formatarDataBR) ainda vive no script principal de
 // index.html e e injetado.
 export function createHomeDashboardFeature({
   obterTextoSemanaDeData,
   limparTempo,
-  carregarCampanhas,
   carregarDadosPlanilha,
   atualizarDashboard,
   mostrarToast,
@@ -201,22 +200,6 @@ export function createHomeDashboardFeature({
     const homeHojeAtiv = document.getElementById('home-atividades-hoje');
     if (dashHojeHoras && homeHojeHoras) homeHojeHoras.textContent = dashHojeHoras.textContent || '00:00';
     if (dashHojeAtiv && homeHojeAtiv) homeHojeAtiv.textContent = dashHojeAtiv.textContent || '0';
-
-    const campanhas = carregarCampanhas();
-    const campAtivas = campanhas.filter(c => c.status === 'Ativa').length;
-    const campProg = campanhas.filter(c => c.status === 'Programada').length;
-
-    const campTotalEl = document.getElementById('home-campanhas-total');
-    if (campTotalEl) campTotalEl.textContent = campanhas.length;
-
-    const campBadgeEl = document.getElementById('home-campanhas-badge');
-    if (campBadgeEl) campBadgeEl.textContent = `${campAtivas} Ativa${campAtivas === 1 ? '' : 's'}`;
-
-    const campResumoEl = document.getElementById('home-campanhas-resumo');
-    if (campResumoEl) campResumoEl.textContent = `${campAtivas} ativa${campAtivas === 1 ? '' : 's'} • ${campProg} programada${campProg === 1 ? '' : 's'}`;
-
-    const badgeCamp = document.getElementById('badge-campanhas-ativas');
-    if (badgeCamp) badgeCamp.textContent = campAtivas;
 
     renderizarDonutHome(projetosDados, totalSegundos);
     renderizarDonutHome(assuntosDados, totalSegundos, {

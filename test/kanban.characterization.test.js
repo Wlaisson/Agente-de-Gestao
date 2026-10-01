@@ -201,3 +201,78 @@ test('POST /api/kanban acao invalida -> 400', async () => {
   const body = await res.json();
   assert.equal(body.error, 'Ação inválida');
 });
+
+test('POST /api/kanban update_kanban_status rejeita alteração se card pertence a outro usuário (403)', async () => {
+  ctx.supabase.setFromHandler(kanbanTable());
+  // Cria card com dono user-1
+  const criar = await fetch(`${ctx.baseUrl}/api/kanban`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', 'x-user-id': 'user-1' },
+    body: JSON.stringify({ action: 'add_kanban', titulo: 'Card Protegido' })
+  });
+  const { id } = await criar.json();
+
+  // Tenta atualizar como user-2
+  const res = await fetch(`${ctx.baseUrl}/api/kanban`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', 'x-user-id': 'user-2' },
+    body: JSON.stringify({ action: 'update_kanban_status', id, status: 'Em Andamento' })
+  });
+  assert.equal(res.status, 403);
+  const body = await res.json();
+  assert.match(body.error, /outro usuário/);
+
+  // Tenta atualizar como o dono user-1 (sucesso)
+  const resDono = await fetch(`${ctx.baseUrl}/api/kanban`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', 'x-user-id': 'user-1' },
+    body: JSON.stringify({ action: 'update_kanban_status', id, status: 'Em Andamento' })
+  });
+  assert.equal(resDono.status, 200);
+});
+
+test('AtualizarStatusCardUseCase: validação unitária de escopo por userId', async () => {
+  const { makeAtualizarStatusCardUseCase } = await import('../application/use-cases/kanban/AtualizarStatusCardUseCase.js');
+  let salvoSupabase = null;
+  const repoFake = {
+    async listarCards() {
+      return [
+        { id: 'c-1', userId: 'user-a', status: 'A Fazer' },
+        { id: 'c-legado', userId: null, status: 'A Fazer' }
+      ];
+    },
+    salvarCardsLocais() {},
+    async atualizarSupabase(id, dados) {
+      salvoSupabase = { id, dados };
+    }
+  };
+
+  const useCase = makeAtualizarStatusCardUseCase({ kanbanRepository: repoFake });
+
+  // 1. Outro usuário tenta atualizar -> 403
+  await assert.rejects(
+    () => useCase({ id: 'c-1', status: 'Concluído', userId: 'user-b' }),
+    err => err.status === 403 && /outro usuário/.test(err.message)
+  );
+
+  // 2. Card inexistente com userId -> 404
+  await assert.rejects(
+    () => useCase({ id: 'c-inexistente', status: 'Concluído', userId: 'user-a' }),
+    err => err.status === 404 && /não encontrado/.test(err.message)
+  );
+
+  // 3. Mesmo usuário -> sucesso
+  await useCase({ id: 'c-1', status: 'Concluído', userId: 'user-a' });
+  assert.equal(salvoSupabase.id, 'c-1');
+  assert.equal(salvoSupabase.dados.status, 'Concluído');
+
+  // 4. Card sem dono com userId (legado) -> sucesso
+  await useCase({ id: 'c-legado', status: 'Em Andamento', userId: 'user-a' });
+  assert.equal(salvoSupabase.id, 'c-legado');
+  assert.equal(salvoSupabase.dados.status, 'Em Andamento');
+
+  // 5. Sem userId (chamada legada) -> sucesso
+  await useCase({ id: 'c-1', status: 'A Fazer', userId: null });
+  assert.equal(salvoSupabase.dados.status, 'A Fazer');
+});
+

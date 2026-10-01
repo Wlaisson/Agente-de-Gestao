@@ -69,13 +69,13 @@
                     <span class="item-label">Quadro Kanban</span>
                     <span class="item-badge" id="badge-kanban-abertas">0</span>
                 </button>
-                <button class="sidebar-item tab-btn" onclick="switchTab('campanhas-tab')" data-tab="campanhas-tab">
-                    <span class="item-icon"><svg class="app-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="6" r="6"/><circle cx="12" cy="12" r="2"/></svg></span>
-                    <span class="item-label">Campanhas</span>
-                    <span class="item-badge pulse" id="badge-campanhas-ativas">0</span>
-                </button>
 
                 <div class="nav-section-label">RELATÓRIOS & IA</div>
+                <button class="sidebar-item tab-btn" onclick="switchTab('assistente-tab')" data-tab="assistente-tab">
+                    <span class="item-icon"><svg class="app-icon" viewBox="0 0 24 24"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg></span>
+                    <span class="item-label">Assistente</span>
+                    <span class="item-badge" style="background: rgba(147, 51, 234, 0.25); color: #c084fc;">A2A</span>
+                </button>
                 <button class="sidebar-item tab-btn" onclick="switchTab('reporter-tab')" data-tab="reporter-tab">
                     <span class="item-icon"><svg class="app-icon" viewBox="0 0 24 24"><rect width="18" height="14" x="3" y="6" rx="2"/><path d="M12 2v4"/><path d="M8 12h.01"/><path d="M16 12h.01"/><path d="M2 12h1"/><path d="M21 12h1"/></svg></span>
                     <span class="item-label">Agente Reporter 4</span>
@@ -206,17 +206,6 @@
                             </div>
                         </div>
 
-                        <div class="kpi-card" style="cursor: pointer;" onclick="switchTab('campanhas-tab')">
-                            <div class="kpi-top">
-                                <div class="kpi-icon-box kpi-icon-purple"><svg class="app-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="6" r="6"/><circle cx="12" cy="12" r="2"/></svg></div>
-                                <span class="kpi-badge badge-indigo" id="home-campanhas-badge">0 Ativas</span>
-                            </div>
-                            <div class="kpi-label">Campanhas Estratégicas</div>
-                            <div class="kpi-value" id="home-campanhas-total">0</div>
-                            <div class="kpi-footer">
-                                <span id="home-campanhas-resumo">0 ativas • 0 programadas</span>
-                            </div>
-                        </div>
                     </div>
 
                     <div class="widgets-modular-grid">
@@ -267,11 +256,6 @@
                                         <div class="quick-action-icon"><svg class="app-icon" viewBox="0 0 24 24"><rect width="18" height="14" x="3" y="6" rx="2"/><path d="M12 2v4"/><path d="M8 12h.01"/><path d="M16 12h.01"/><path d="M2 12h1"/><path d="M21 12h1"/></svg></div>
                                         <div class="quick-action-title">Agente Repórter</div>
                                         <div class="quick-action-desc">Relatório automatizado de fechamento</div>
-                                    </div>
-                                    <div class="quick-action-card" onclick="switchTab('campanhas-tab')">
-                                        <div class="quick-action-icon"><svg class="app-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="6" r="6"/><circle cx="12" cy="12" r="2"/></svg></div>
-                                        <div class="quick-action-title">Campanhas</div>
-                                        <div class="quick-action-desc">Gerenciamento de entregas e metas</div>
                                     </div>
                                 </div>
                             </div>
@@ -737,6 +721,44 @@
                 </div>
             </div>
 
+            <div id="assistente-tab" class="tab-content">
+                <div class="card assistente-card">
+                    <div class="assistente-topo">
+                        <div>
+                            <h2 class="card-title" style="margin-bottom: 0.25rem;">
+                                <span><svg class="app-icon" viewBox="0 0 24 24"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg></span>
+                                Assistente de Gestão
+                            </h2>
+                            <p class="assistente-subtitulo">Pergunte sobre suas atividades, tempos e tarefas — ou peça o texto pronto para colar nas apresentações.</p>
+                        </div>
+                        <button type="button" class="btn btn-secondary" style="width: auto; padding: 0.55rem 1rem;" onclick="novaConversaAssistente()">
+                            <span><svg class="app-icon" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg></span>
+                            Nova conversa
+                        </button>
+                    </div>
+
+                    <div id="assistente-historico" class="assistente-historico">
+                        <div id="assistente-vazio" class="assistente-vazio">
+                            <p class="assistente-vazio-titulo">No que posso ajudar?</p>
+                            <p class="assistente-vazio-texto">Eu só enxergo as suas atividades. Nada é gravado sem a sua confirmação.</p>
+                            <div id="assistente-sugestoes" class="assistente-sugestoes"></div>
+                        </div>
+                    </div>
+
+                    <div class="assistente-composer">
+                        <textarea id="assistente-input" class="assistente-input" rows="1"
+                                  placeholder="Ex.: quanto tempo gastei essa semana com a RedePRO?"></textarea>
+                        <button type="button" id="assistente-mic" class="assistente-btn-mic" title="Gravar áudio">
+                            <svg class="app-icon" viewBox="0 0 24 24"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg>
+                        </button>
+                        <button type="button" id="assistente-enviar" class="assistente-btn-enviar" onclick="enviarMensagemAssistente()" title="Enviar (Enter)">
+                            <svg class="app-icon" viewBox="0 0 24 24"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
+                        </button>
+                    </div>
+                    <p class="assistente-rodape">Enter envia · Shift+Enter quebra linha · 🎙️ para falar</p>
+                </div>
+            </div>
+
             <div id="reporter-tab" class="tab-content">
                 <div class="card">
                     <div class="reporter-header">
@@ -812,71 +834,6 @@
                         </div>
                     </div>
                 </div>
-            </div>
-
-            <div id="campanhas-tab" class="tab-content">
-                <div class="home-welcome">
-                    <div class="home-welcome-text">
-                        <h2>Gestão de Campanhas</h2>
-                        <p>Acompanhamento estratégico, metas e status das campanhas ativas e programadas.</p>
-                    </div>
-                    <div>
-                        <button class="btn btn-primary" onclick="abrirModalCampanha()" style="padding: 0.6rem 1.25rem;">
-                            <span><svg class="app-icon" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span> Nova Campanha
-                        </button>
-                    </div>
-                </div>
-
-                <div class="widgets-kpi-grid" style="margin-bottom: 1.5rem;">
-                    <div class="kpi-card">
-                        <div class="kpi-top">
-                            <div class="kpi-icon-box kpi-icon-purple"><svg class="app-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="6" r="6"/><circle cx="12" cy="12" r="2"/></svg></div>
-                            <span class="kpi-badge badge-indigo">Total</span>
-                        </div>
-                        <div class="kpi-label">Total de Campanhas</div>
-                        <div class="kpi-value" id="camp-total">0</div>
-                        <div class="kpi-footer">Cadastradas no sistema</div>
-                    </div>
-                    <div class="kpi-card">
-                        <div class="kpi-top">
-                            <div class="kpi-icon-box kpi-icon-emerald"><svg class="app-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg></div>
-                            <span class="kpi-badge badge-emerald">Em Curso</span>
-                        </div>
-                        <div class="kpi-label">Campanhas Ativas</div>
-                        <div class="kpi-value" id="camp-ativas" style="color: var(--success);">0</div>
-                        <div class="kpi-footer">Em execução neste momento</div>
-                    </div>
-                    <div class="kpi-card">
-                        <div class="kpi-top">
-                            <div class="kpi-icon-box kpi-icon-amber"><svg class="app-icon" viewBox="0 0 24 24"><path d="M5 22h14"/><path d="M5 2h14"/><path d="M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22"/><path d="M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2"/></svg></div>
-                            <span class="kpi-badge badge-amber">Planejadas</span>
-                        </div>
-                        <div class="kpi-label">Campanhas Programadas</div>
-                        <div class="kpi-value" id="camp-programadas" style="color: var(--warning);">0</div>
-                        <div class="kpi-footer">Aguardando início do ciclo</div>
-                    </div>
-                    <div class="kpi-card">
-                        <div class="kpi-top">
-                            <div class="kpi-icon-box kpi-icon-indigo"><svg class="app-icon" viewBox="0 0 24 24"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></div>
-                            <span class="kpi-badge badge-indigo">Concluídas</span>
-                        </div>
-                        <div class="kpi-label">Finalizadas</div>
-                        <div class="kpi-value" id="camp-concluidas">0</div>
-                        <div class="kpi-footer">Entregas concluídas</div>
-                    </div>
-                </div>
-
-                <div class="campanhas-controls">
-                    <div class="campanhas-filter-group">
-                        <button class="campanha-filter-btn active" onclick="filtrarCampanhas('Todas', event)">Todas (<span id="camp-count-todas">0</span>)</button>
-                        <button class="campanha-filter-btn" onclick="filtrarCampanhas('Ativa', event)">Ativas (<span id="camp-count-ativas">0</span>)</button>
-                        <button class="campanha-filter-btn" onclick="filtrarCampanhas('Programada', event)">Programadas (<span id="camp-count-programadas">0</span>)</button>
-                        <button class="campanha-filter-btn" onclick="filtrarCampanhas('Concluída', event)">Concluídas (<span id="camp-count-concluidas">0</span>)</button>
-                        <button class="campanha-filter-btn" onclick="filtrarCampanhas('Pausada', event)">Pausadas (<span id="camp-count-pausadas">0</span>)</button>
-                    </div>
-                </div>
-
-                <div id="campanhas-container" class="campanhas-grid"></div>
             </div>
 
             <div id="gerenciar-tab" class="tab-content">
@@ -1136,7 +1093,7 @@
                             <label class="perm-checkbox-item"><input type="checkbox" name="perm_aba" value="home-tab" checked> Início / Home</label>
                             <label class="perm-checkbox-item"><input type="checkbox" name="perm_aba" value="registro-tab" checked> Criar Nova Atividade</label>
                             <label class="perm-checkbox-item"><input type="checkbox" name="perm_aba" value="kanban-tab" checked> Quadro Kanban</label>
-                            <label class="perm-checkbox-item"><input type="checkbox" name="perm_aba" value="campanhas-tab" checked> Campanhas</label>
+                            <label class="perm-checkbox-item"><input type="checkbox" name="perm_aba" value="assistente-tab" checked> Assistente de Gestão</label>
                             <label class="perm-checkbox-item"><input type="checkbox" name="perm_aba" value="reporter-tab" checked> Agente Reporter 4</label>
                             <label class="perm-checkbox-item"><input type="checkbox" name="perm_aba" value="semana-tab" checked> Atividades da Semana</label>
                             <label class="perm-checkbox-item"><input type="checkbox" name="perm_aba" value="resumo-tab" checked> Resumo Executivo</label>
@@ -1152,91 +1109,6 @@
                         <span><svg class="app-icon" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span>
                         Criar Usuário com Acesso
                     </button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <div class="modal-overlay" id="campanhaModal">
-        <div class="modal" style="max-width: 550px;">
-            <div class="modal-header">
-                <h3 class="modal-title" id="campanhaModalTitle">Nova Campanha</h3>
-                <button class="modal-close" onclick="fecharModalCampanha()">&times;</button>
-            </div>
-            <form id="campanhaForm" onsubmit="salvarCampanha(event)">
-                <input type="hidden" id="camp-id" name="id">
-                <div class="modal-body">
-                    <div class="form-group">
-                        <label for="camp-nome">Nome da Campanha</label>
-                        <input type="text" id="camp-nome" placeholder="Ex: Onboarding Viamar 2026..." required>
-                    </div>
-
-                    <div class="grid-2">
-                        <div class="form-group">
-                            <label for="camp-projeto">Projeto Vinculado</label>
-                            <select id="camp-projeto" required>
-                                <option value="">Selecione o Projeto...</option>
-                                <option value="Interno">Interno</option>
-                                <option value="Fabricantes - Unimil">Fabricantes - Unimil</option>
-                                <option value="SMB - CBA Diesel">SMB - CBA Diesel</option>
-                                <option value="Projetos - Rede Pró">Projetos - Rede Pró</option>
-                                <option value="Fabricantes - Círculo">Fabricantes - Círculo</option>
-                                <option value="Projetos - Rodobens">Projetos - Rodobens</option>
-                                <option value="Projetos - Leo Madeira">Projetos - Leo Madeira</option>
-                                <option value="Projetos - Agrominas">Projetos - Agrominas</option>
-                                <option value="Fabricantes - Intercoffee">Fabricantes - Intercoffee</option>
-                                <option value="Projetos - Wurth">Projetos - Wurth</option>
-                                <option value="Projetos - Campneus">Projetos - Campneus</option>
-                                <option value="Projetos - Bunge">Projetos - Bunge</option>
-                                <option value="SMB - Rasec">SMB - Rasec</option>
-                                <option value="Projetos - Broto">Projetos - Broto</option>
-                                <option value="Projetos - Fortbras">Projetos - Fortbras</option>
-                                <option value="Projetos - CDC">Projetos - CDC</option>
-                                <option value="Projetos - Prometeon">Projetos - Prometeon</option>
-                                <option value="Projetos - Tracbel">Projetos - Tracbel</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="camp-status">Status</label>
-                            <select id="camp-status" required>
-                                <option value="Ativa">Ativa</option>
-                                <option value="Programada">Programada</option>
-                                <option value="Concluída">Concluída</option>
-                                <option value="Pausada">Pausada</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="grid-2">
-                        <div class="form-group">
-                            <label for="camp-data-inicio">Data de Início</label>
-                            <input type="date" id="camp-data-inicio" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="camp-data-fim">Término Previsto</label>
-                            <input type="date" id="camp-data-fim" required>
-                        </div>
-                    </div>
-
-                    <div class="grid-2">
-                        <div class="form-group">
-                            <label for="camp-meta-horas">Meta de Horas Estimada</label>
-                            <input type="number" id="camp-meta-horas" min="1" max="500" placeholder="Ex: 40">
-                        </div>
-                        <div class="form-group">
-                            <label for="camp-progresso">Progresso (%)</label>
-                            <input type="number" id="camp-progresso" min="0" max="100" value="0">
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="camp-descricao">Descrição / Escopo da Campanha</label>
-                        <textarea id="camp-descricao" rows="3" placeholder="Detalhes dos objetivos e entregáveis principais..." style="width: 100%; border-radius: 8px; border: 1px solid var(--border); padding: 0.6rem; font-family: inherit; font-size: 0.9rem; resize: vertical;"></textarea>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" onclick="fecharModalCampanha()">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">Salvar Campanha</button>
                 </div>
             </form>
         </div>
@@ -1554,12 +1426,16 @@
         } from './js/domain/tempo.js';
         import { getAppSvgIcon } from './js/ui/icons.js';
         import { criarMostrarToast } from './js/ui/toast.js';
-        import { createCampanhasFeature } from './js/features/campanhas.js';
         import { createTarefasAgendaFeature } from './js/features/tarefas-agenda.js';
         import { createHomeDashboardFeature } from './js/features/home-dashboard.js';
         import { createNavigationFeature } from './js/features/navigation.js';
+        import { createAssistenteFeature } from './js/features/assistente.js';
 
         installAuthFetchInterceptor({ obterUsuarioLogado, obterSessaoAuth });
+
+        const assistente = createAssistenteFeature({
+            mostrarToast: (...args) => mostrarToast(...args)
+        });
 
         const adminUsers = createAdminUsersModule({
             mostrarToast: (...args) => mostrarToast(...args),
@@ -1583,7 +1459,6 @@
         // modulo; `function nome(){}` e hoisted no escopo do modulo, entao a
         // referencia e valida independente da ordem textual.
         window.abrirEdicao = (...a) => abrirEdicao(...a);
-        window.abrirModalCampanha = (...a) => abrirModalCampanha(...a);
         window.abrirModalEditarTarefa = (...a) => abrirModalEditarTarefa(...a);
         window.abrirModalNovaTarefa = (...a) => abrirModalNovaTarefa(...a);
         window.adicionarAssuntoInterno = (...a) => adicionarAssuntoInterno(...a);
@@ -1611,7 +1486,6 @@
         window.editarProjeto = (...a) => editarProjeto(...a);
         window.excluirAssuntoInterno = (...a) => excluirAssuntoInterno(...a);
         window.excluirAtividade = (...a) => excluirAtividade(...a);
-        window.excluirCampanha = (...a) => excluirCampanha(...a);
         window.excluirCard = (...a) => excluirCard(...a);
         window.excluirClass1 = (...a) => excluirClass1(...a);
         window.excluirClass2 = (...a) => excluirClass2(...a);
@@ -1619,12 +1493,10 @@
         window.executarLogin = (...a) => executarLogin(...a);
         window.fazerLogout = (...a) => fazerLogout(...a);
         window.fecharModal = (...a) => fecharModal(...a);
-        window.fecharModalCampanha = (...a) => fecharModalCampanha(...a);
         window.fecharModalConclusao = (...a) => fecharModalConclusao(...a);
         window.fecharModalEditarKanban = (...a) => fecharModalEditarKanban(...a);
         window.fecharModalKanban = (...a) => fecharModalKanban(...a);
         window.filtrarAtividadesSemana = (...a) => filtrarAtividadesSemana(...a);
-        window.filtrarCampanhas = (...a) => filtrarCampanhas(...a);
         window.gerarRelatorio = (...a) => gerarRelatorio(...a);
         window.gerarRelatorioReporter = (...a) => gerarRelatorioReporter(...a);
         window.gerarResumoSemanal = (...a) => gerarResumoSemanal(...a);
@@ -1641,12 +1513,13 @@
         window.moverCard = (...a) => moverCard(...a);
         window.renderizarListaAssuntos = (...a) => renderizarListaAssuntos(...a);
         window.renderizarListaProjetos = (...a) => renderizarListaProjetos(...a);
-        window.salvarCampanha = (...a) => salvarCampanha(...a);
         window.salvarSetupUsuario = (...a) => salvarSetupUsuario(...a);
         window.sincronizarAgenda = (...a) => sincronizarAgenda(...a);
         window.switchSubTabGerenciar = (...a) => switchSubTabGerenciar(...a);
         window.switchTab = (...a) => switchTab(...a);
         window.toggleGravacaoKanban = (...a) => toggleGravacaoKanban(...a);
+        window.enviarMensagemAssistente = () => assistente.enviarMensagem();
+        window.novaConversaAssistente = () => assistente.novaConversa();
 
         function abrirTelaLogin() {
             const overlay = document.getElementById('login-overlay');
@@ -2645,39 +2518,23 @@
         const { switchTab } = createNavigationFeature({
             mostrarToast,
             atualizarHomeDashboard: (...a) => atualizarHomeDashboard(...a),
-            renderizarCampanhas: (...a) => renderizarCampanhas(...a),
             carregarDadosPlanilha,
             carregarOpcoesSistema,
             popularTodosSelects,
             carregarTarefas: (...a) => carregarTarefas(...a),
             carregarKanban,
             carregarSetupUsuario,
-            adminUsers
+            adminUsers,
+            inicializarAssistente: () => assistente.inicializar()
         });
 
         const { atualizarHomeDashboard, renderizarDonutHome, renderizarAtividadesRecentesHome } = createHomeDashboardFeature({
             obterTextoSemanaDeData: (...a) => obterTextoSemanaDeData(...a),
             limparTempo: (...a) => limparTempo(...a),
-            carregarCampanhas: (...a) => carregarCampanhas(...a),
             carregarDadosPlanilha: (...a) => carregarDadosPlanilha(...a),
             atualizarDashboard: (...a) => atualizarDashboard(...a),
             mostrarToast,
             formatarDataBR: (...a) => formatarDataBR(...a)
-        });
-
-        const {
-            carregarCampanhas,
-            salvarCampanhasLocais,
-            renderizarCampanhas,
-            filtrarCampanhas,
-            abrirModalCampanha,
-            fecharModalCampanha,
-            salvarCampanha,
-            excluirCampanha
-        } = createCampanhasFeature({
-            mostrarToast,
-            formatarDataBR,
-            atualizarHomeDashboard: (...a) => atualizarHomeDashboard(...a)
         });
 
         function inicializarDadosUsuarioLogado() {
@@ -2687,7 +2544,6 @@
             inicializarSemanaReporter();
             inicializarSemanaResumo();
             carregarKanban();
-            carregarCampanhas();
             carregarOpcoesSistema();
             carregarSetupUsuario();
             carregarDadosPlanilha().then(() => {

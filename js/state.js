@@ -1,5 +1,5 @@
 // Estado hoje espalhado como globais soltos no script de index.html
-// (todasAtividades, kanbanCards, campanhasDados, OPCOES_SISTEMA,
+// (todasAtividades, kanbanCards, OPCOES_SISTEMA,
 // MAPA_CLASSIFICACOES, configUsuarioAtual), centralizado num unico objeto
 // mutavel. E um objeto (nao bindings `export let`) de proposito: o codigo
 // original tanto MUTA quanto REATRIBUI essas variaveis em dezenas de lugares
@@ -11,7 +11,6 @@
 export const state = {
   todasAtividades: [],
   kanbanCards: [],
-  campanhasDados: [],
   configUsuarioAtual: null,
 
   OPCOES_SISTEMA: {

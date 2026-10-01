@@ -92,6 +92,6 @@ export function createSupabaseOpcoesRepository({ supabaseAdmin }) {
   };
 }
 
-// Instancia padrao para consumidores ainda nao migrados (ex.: rotas de
-// transcricao em legacyRoutes.js, que so leem opcoes para montar o prompt).
+// Instancia padrao, exportada para uso fora do composition root. As rotas
+// montam a propria instancia em interface-adapters/routes/index.js.
 export const opcoesRepository = createSupabaseOpcoesRepository({ supabaseAdmin });
