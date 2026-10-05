@@ -75,6 +75,12 @@ export function createSupabaseTarefaA2ARepository({ supabaseAdmin, limiteMemoria
     return tarefa;
   }
 
+  function buscarEmMemoriaPorContexto(contextId, userId) {
+    return [...memoria.values()]
+      .filter(t => t.contextId === contextId && t.userId === userId)
+      .sort((a, b) => String(a.criadoEm).localeCompare(String(b.criadoEm)));
+  }
+
   return {
     async salvar(tarefa) {
       if (usandoMemoria) return salvarEmMemoria(tarefa);
@@ -82,13 +88,7 @@ export function createSupabaseTarefaA2ARepository({ supabaseAdmin, limiteMemoria
       try {
         const { error } = await supabaseAdmin.from(TABELA).upsert(tarefaParaLinha(tarefa));
         if (error) {
-          if (tabelaAusente(error)) {
-            avisarUmaVez(error.message);
-            return salvarEmMemoria(tarefa);
-          }
-          // Erro real de escrita (permissao, constraint): nao silenciar, mas
-          // tambem nao derrubar a conversa em andamento.
-          console.error('[a2a] Falha ao persistir tarefa:', error.message);
+          avisarUmaVez(error.message);
           return salvarEmMemoria(tarefa);
         }
         // Espelho em memoria: leitura imediata apos escrita nao depende de
@@ -109,23 +109,24 @@ export function createSupabaseTarefaA2ARepository({ supabaseAdmin, limiteMemoria
       try {
         const { data, error } = await supabaseAdmin.from(TABELA).select('*').eq('id', taskId).single();
         if (error) {
-          if (tabelaAusente(error)) avisarUmaVez(error.message);
-          return null;
+          avisarUmaVez(error.message);
+          return memoria.get(taskId) || null;
         }
-        return data ? linhaParaTarefa(data) : null;
+        if (!data) return memoria.get(taskId) || null;
+        const tarefa = linhaParaTarefa(data);
+        memoria.set(tarefa.id, tarefa);
+        return tarefa;
       } catch (e) {
         avisarUmaVez(e.message);
-        return null;
+        return memoria.get(taskId) || null;
       }
     },
 
     // Historico da conversa (todas as tarefas de um mesmo contexto), usado
-    // pela UI para reabrir um fio anterior.
+    // pela UI para reabrir um fio anterior ou manter continuidade.
     async listarPorContexto(contextId, userId) {
       if (usandoMemoria) {
-        return [...memoria.values()]
-          .filter(t => t.contextId === contextId && t.userId === userId)
-          .sort((a, b) => String(a.criadoEm).localeCompare(String(b.criadoEm)));
+        return buscarEmMemoriaPorContexto(contextId, userId);
       }
 
       try {
@@ -136,13 +137,20 @@ export function createSupabaseTarefaA2ARepository({ supabaseAdmin, limiteMemoria
           .eq('user_id', userId)
           .order('criado_em', { ascending: true });
         if (error) {
-          if (tabelaAusente(error)) avisarUmaVez(error.message);
-          return [];
+          avisarUmaVez(error.message);
+          return buscarEmMemoriaPorContexto(contextId, userId);
         }
-        return (data || []).map(linhaParaTarefa);
+        const tarefasBanco = (data || []).map(linhaParaTarefa);
+        if (tarefasBanco.length === 0) {
+          return buscarEmMemoriaPorContexto(contextId, userId);
+        }
+        for (const t of tarefasBanco) {
+          memoria.set(t.id, t);
+        }
+        return tarefasBanco;
       } catch (e) {
         avisarUmaVez(e.message);
-        return [];
+        return buscarEmMemoriaPorContexto(contextId, userId);
       }
     }
   };

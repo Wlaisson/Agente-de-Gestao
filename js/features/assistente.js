@@ -1,4 +1,4 @@
-import { enviarMensagemAgente, confirmarAcaoAgente, enviarAudioAgente } from '../api/agentesApi.js';
+import { enviarMensagemAgente, confirmarAcaoAgente, enviarAudioAgente, obterHistoricoAgente } from '../api/agentesApi.js';
 
 // Aba "Assistente": o chat com o sistema de agentes.
 //
@@ -89,12 +89,22 @@ const SUGESTOES = [
 ];
 
 export function createAssistenteFeature({ mostrarToast }) {
+  const STORAGE_CONTEXT_ID = 'wma_assistente_context_id';
   // Estado da conversa. `contextId` amarra as tarefas de um mesmo fio;
   // `taskIdPendente` guarda a tarefa parada em input-required, que e a que
   // os botoes de confirmacao respondem.
   let contextId = null;
   let taskIdPendente = null;
   let enviando = false;
+  let historicoCarregado = false;
+
+  function salvarContextId(id) {
+    if (!id) return;
+    contextId = id;
+    try {
+      localStorage.setItem(STORAGE_CONTEXT_ID, id);
+    } catch (_) {}
+  }
 
   // Estado de gravacao de audio, mesmo padrao das outras abas.
   let mediaRecorder = null;
@@ -300,7 +310,7 @@ export function createAssistenteFeature({ mostrarToast }) {
       });
 
       removerPensando();
-      contextId = resposta.contextId || contextId;
+      salvarContextId(resposta.contextId);
 
       if (resposta.texto) {
         adicionarBolha({
@@ -333,6 +343,9 @@ export function createAssistenteFeature({ mostrarToast }) {
   function novaConversa() {
     contextId = null;
     taskIdPendente = null;
+    try {
+      localStorage.removeItem(STORAGE_CONTEXT_ID);
+    } catch (_) {}
     const hist = el('assistente-historico');
     if (hist) hist.innerHTML = '';
     const vazio = el('assistente-vazio');
@@ -354,8 +367,40 @@ export function createAssistenteFeature({ mostrarToast }) {
     }
   }
 
-  function inicializar() {
+  async function carregarHistoricoSalvo() {
+    if (historicoCarregado) return;
+    historicoCarregado = true;
+    let idSalvo = null;
+    try {
+      idSalvo = localStorage.getItem(STORAGE_CONTEXT_ID);
+    } catch (_) {}
+    if (!idSalvo) return;
+
+    try {
+      const mensagens = await obterHistoricoAgente(idSalvo);
+      if (mensagens && mensagens.length > 0) {
+        contextId = idSalvo;
+        const vazio = el('assistente-vazio');
+        if (vazio) vazio.style.display = 'none';
+        for (const msg of mensagens) {
+          adicionarBolha({
+            papel: msg.role === 'agent' ? 'agente' : 'usuario',
+            html: renderizarMarkdown(msg.texto),
+            comCopia: msg.role === 'agent',
+            textoCru: msg.texto
+          });
+        }
+      } else {
+        try { localStorage.removeItem(STORAGE_CONTEXT_ID); } catch (_) {}
+      }
+    } catch (_) {
+      try { localStorage.removeItem(STORAGE_CONTEXT_ID); } catch (_) {}
+    }
+  }
+
+  async function inicializar() {
     montarSugestoes();
+    await carregarHistoricoSalvo();
     const input = el('assistente-input');
     if (input && !input.dataset.ligado) {
       input.dataset.ligado = '1';
@@ -442,7 +487,7 @@ export function createAssistenteFeature({ mostrarToast }) {
       });
 
       removerPensando();
-      contextId = resposta.contextId || contextId;
+      salvarContextId(resposta.contextId);
 
       // Regra de seguranca 1: o texto transcrito SEMPRE aparece como bolha
       // do usuario, ANTES da resposta do agente. Sem isso, o usuario nao

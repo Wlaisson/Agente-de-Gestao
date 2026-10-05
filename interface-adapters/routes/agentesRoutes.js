@@ -18,6 +18,7 @@ export function createAgentesRoutes({ agentesController, a2aServer, agentRegistr
   router.get('/api/agentes/tarefas/:id', agentesController.obterTarefa);
   router.post('/api/agentes/tarefas/:id/cancelar', agentesController.cancelarTarefa);
   router.get('/api/agentes', agentesController.listarAgentes);
+  router.get('/api/agentes/historico/:contextId', agentesController.obterHistorico);
   router.get('/api/agentes/trace/:contextId', agentesController.obterTrace);
 
   // Card do ponto de entrada. Um cliente A2A externo comeca por aqui para

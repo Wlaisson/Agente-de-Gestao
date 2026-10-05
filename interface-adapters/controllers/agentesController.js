@@ -14,7 +14,7 @@ function obterUserId(req) {
 // contrato mais direto ({ texto, propostas, ... }) e no mesmo estilo dos
 // outros endpoints do app. Os dois entram no MESMO TaskManager - nenhuma
 // regra de negocio ou de seguranca e duplicada entre eles.
-export function makeAgentesController({ taskManager, agentRegistry, openAIGateway, tracer }) {
+export function makeAgentesController({ taskManager, agentRegistry, openAIGateway, tracer, tarefaRepository = null }) {
   function respostaDeTarefa(tarefa) {
     const mensagem = tarefa.status.message;
     const dados = extrairDados(mensagem) || {};
@@ -207,6 +207,35 @@ export function makeAgentesController({ taskManager, agentRegistry, openAIGatewa
     obterTrace(req, res) {
       const { contextId } = req.params;
       res.json({ status: 'success', contextId, spans: tracer.obterArvore(contextId) });
+    },
+
+    async obterHistorico(req, res) {
+      const userId = obterUserId(req);
+      if (!userId) return res.status(401).json({ error: 'Usuário não autenticado.' });
+      const { contextId } = req.params;
+      if (!contextId) return res.status(400).json({ error: 'Envie "contextId".' });
+
+      try {
+        const tarefas = await (tarefaRepository
+          ? tarefaRepository.listarPorContexto(contextId, userId)
+          : []);
+
+        const mensagens = tarefas
+          .filter(t => !t.metadata?.parentTaskId)
+          .flatMap(t => t.history || [])
+          .filter(m => m.role === 'user' || m.role === 'agent')
+          .map(m => ({
+            role: m.role,
+            texto: extrairTexto(m),
+            timestamp: m.timestamp || null
+          }))
+          .filter(m => m.texto);
+
+        return res.json({ status: 'success', contextId, mensagens });
+      } catch (err) {
+        return tratarErro(res, err, 'Erro ao obter histórico da conversa.');
+      }
     }
   };
 }
+

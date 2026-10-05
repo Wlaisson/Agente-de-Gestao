@@ -149,7 +149,8 @@ export function createRoutes() {
     taskManager,
     agentRegistry,
     openAIGateway,
-    tracer
+    tracer,
+    tarefaRepository: tarefaA2ARepository
   });
 
   const router = Router();

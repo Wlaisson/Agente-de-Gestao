@@ -51,3 +51,11 @@ export async function enviarAudioAgente({ blob, taskId = null, contextId = null 
   if (!res.ok) throw new Error(json.error || 'Falha ao processar o áudio.');
   return json;
 }
+
+export async function obterHistoricoAgente(contextId) {
+  const res = await fetch(`/api/agentes/historico/${encodeURIComponent(contextId)}`);
+  const json = await res.json();
+  if (!res.ok) throw new Error(json.error || 'Falha ao obter histórico.');
+  return json.mensagens || [];
+}
+

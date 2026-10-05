@@ -11,11 +11,11 @@ import {
 
 export const CARD_REDATOR = criarAgentCard({
   id: 'redator',
-  name: 'Redator de Apresentações',
+  name: 'Redator de Apresentações e Relatórios',
   description:
-    'Gera o texto pronto para colar em apresentações de status a partir das atividades registradas. ' +
-    'Conhece os formatos "Weekly Conteúdo Técnico" (card por cliente) e "AI Estratégica" (slide ' +
-    'Agentes de Catálogo). Use quando o usuário pedir texto para slide, weekly, status report ou resumo executivo.',
+    'Gera o texto pronto para colar em apresentações de status e relatórios a partir das atividades registradas. ' +
+    'Conhece os formatos "Weekly Conteúdo Técnico" (card por cliente), "AI Estratégica" (slide ' +
+    'Agentes de Catálogo) e "Resumo da Semana por Assunto" (resumo semanal executivo/formal para envio de sexta-feira, separado por tópicos de cada assunto, focado estritamente em desenvolvimento e construção, excluindo reuniões e atualização de apresentação). Use quando o usuário pedir texto para slide, weekly, status report, resumo da semana por assunto ou resumo de sexta-feira.',
   capabilities: { streaming: false, pushNotifications: false, escrita: false },
   skills: [
     {
@@ -43,9 +43,23 @@ export const CARD_REDATOR = criarAgentCard({
         'atualiza a tabela da AI estratégica',
         'quais os próximos passos pro slide de IA?'
       ]
+    },
+    {
+      id: 'resumo-semana-assunto',
+      name: 'Resumo da Semana por Assunto (Sexta-feira)',
+      description:
+        'Monta o resumo semanal consolidado por tópicos de cada assunto (assuntos internos, Rede Pró, Agrominas, etc.) para envio de sexta-feira. Inclui SOMENTE desenvolvimento e construção, excluindo reuniões e atualização de apresentação.',
+      tags: ['resumo-semana', 'assunto', 'sexta-feira', 'desenvolvimento', 'relatorio'],
+      examples: [
+        'gera o resumo da semana',
+        'resumo da semana por assunto',
+        'monta o resumo de sexta-feira',
+        'resumo semanal para envio'
+      ]
     }
   ]
 });
+
 
 export function criarRedatorAgent({ ferramentas, agentRuntime, obterPerfilUsuario = null }) {
   return criarAgenteLlm({

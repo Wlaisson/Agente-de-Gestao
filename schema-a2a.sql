@@ -58,6 +58,15 @@ create index if not exists idx_a2a_auditoria_user on a2a_auditoria(user_id, cria
 create index if not exists idx_a2a_auditoria_executado on a2a_auditoria(user_id, executado, criado_em desc);
 
 -- ---------------------------------------------------------------------------
+-- Permissões (GRANT)
+-- ---------------------------------------------------------------------------
+-- Garante que service_role e authenticated possam ler e escrever nas tabelas.
+-- Sem isto, o PostgREST responde "permission denied for table a2a_tarefas" (erro 42501).
+grant all on table a2a_tarefas to authenticated, service_role;
+grant all on table a2a_auditoria to authenticated, service_role;
+grant all on sequence a2a_auditoria_id_seq to authenticated, service_role;
+
+-- ---------------------------------------------------------------------------
 -- RLS
 -- ---------------------------------------------------------------------------
 -- O backend acessa estas tabelas com a service role (que ignora RLS), mesmo
@@ -74,6 +83,8 @@ create policy "a2a_tarefas_proprio_usuario" on a2a_tarefas
 drop policy if exists "a2a_auditoria_proprio_usuario" on a2a_auditoria;
 create policy "a2a_auditoria_proprio_usuario" on a2a_auditoria
   for select using (auth.uid() = user_id);
+
+
 
 -- ---------------------------------------------------------------------------
 -- Backfill pendente (ver scripts/backfill_user_id_kanban.js)

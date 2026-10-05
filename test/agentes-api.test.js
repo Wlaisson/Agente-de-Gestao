@@ -78,10 +78,12 @@ test('GET /api/agentes lista os cards para a interface', async () => {
   const body = await res.json();
   assert.equal(body.status, 'success');
   const redator = body.agentes.find(a => a.id === 'redator');
-  // O card do redator e o que declara os dois formatos de apresentacao.
+  // O card do redator e o que declara os formatos de apresentacao e resumo semanal.
   assert.ok(redator.skills.some(s => s.id === 'weekly-tecnico'));
   assert.ok(redator.skills.some(s => s.id === 'ai-estrategica'));
+  assert.ok(redator.skills.some(s => s.id === 'resumo-semana-assunto'));
 });
+
 
 // --- Fronteira REST ---------------------------------------------------------
 
@@ -416,3 +418,31 @@ test('POST /api/agentes/conversar-audio sem identificacao -> 401', async () => {
   });
   assert.equal(res.status, 401);
 });
+
+test('GET /api/agentes/historico/:contextId devolve as mensagens da conversa', async () => {
+  roteirizarModelo([{ texto: 'Primeira resposta.' }]);
+
+  const convRes = await fetch(`${ctx.baseUrl}/api/agentes/conversar`, comUsuario({ texto: 'Olá agente' }));
+  const conv = await convRes.json();
+  assert.equal(conv.status, 'success');
+  assert.ok(conv.contextId);
+
+  const histRes = await fetch(`${ctx.baseUrl}/api/agentes/historico/${conv.contextId}`, {
+    headers: { 'x-user-id': USUARIO }
+  });
+  assert.equal(histRes.status, 200);
+  const hist = await histRes.json();
+  assert.equal(hist.status, 'success');
+  assert.ok(Array.isArray(hist.mensagens));
+  assert.ok(hist.mensagens.length >= 2);
+  assert.equal(hist.mensagens[0].role, 'user');
+  assert.equal(hist.mensagens[0].texto, 'Olá agente');
+  assert.equal(hist.mensagens[1].role, 'agent');
+  assert.equal(hist.mensagens[1].texto, 'Primeira resposta.');
+});
+
+test('GET /api/agentes/historico/:contextId sem autenticacao -> 401', async () => {
+  const res = await fetch(`${ctx.baseUrl}/api/agentes/historico/ctx-123`);
+  assert.equal(res.status, 401);
+});
+

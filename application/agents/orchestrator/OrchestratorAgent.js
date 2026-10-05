@@ -6,20 +6,19 @@ export const CARD_ORQUESTRADOR = criarAgentCard({
   id: 'orquestrador',
   name: 'Cérebro de Gestão',
   description:
-    'Ponto de entrada do sistema de agentes. Entende o pedido do usuário, delega aos especialistas ' +
-    'certos e compõe a resposta final.',
+    'Ponto de entrada do sistema de agentes. Entende o pedido do usuário, mantém o contexto e a memória da conversa, delega aos especialistas certos e compõe a resposta final.',
   capabilities: { streaming: false, pushNotifications: false, escrita: true },
   skills: [
     {
       id: 'gestao-conversacional',
       name: 'Gestão conversacional',
       description:
-        'Responde sobre atividades, tempo, tarefas e gera textos de apresentação, coordenando os ' +
-        'agentes especialistas.',
-      tags: ['orquestracao', 'gestao'],
+        'Responde sobre atividades, tempo, tarefas e gera textos de apresentação e resumos semanais por assunto, coordenando os especialistas e mantendo a continuidade da conversa.',
+      tags: ['orquestracao', 'gestao', 'memoria', 'resumo-semanal'],
       examples: [
         'quanto tempo gastei essa semana com a RedePRO?',
         'gera o texto do weekly da Imdepa',
+        'gera o resumo da semana por assunto',
         'o que está atrasado e o que eu fiz essa semana?'
       ]
     }
@@ -38,14 +37,18 @@ Como trabalhar:
 4. Componha a resposta final a partir do que os especialistas devolveram. Se um deles já entregou o texto pronto (caso do redator), repasse o texto dele na íntegra, sem reescrever nem resumir.
 5. Quando a delegação voltar com propostas de alteração, apresente-as ao usuário e peça confirmação explícita. Nunca diga que algo foi salvo.
 6. Se o pedido for ambíguo a ponto de você não saber a quem delegar, pergunte antes — uma pergunta curta custa menos que uma resposta errada.
+7. MEMÓRIA E CONTINUIDADE DA CONVERSA:
+   - Você recebe o histórico das mensagens trocadas nesta conversa.
+   - Se a pessoa perguntar sobre o que ela ou você acabaram de falar, qual foi a resposta anterior, ou pedir para lembrar algo dito nesta conversa ("o que eu acabei de falar?", "o que você me disse?", "qual foi o total que você calculou?"), responda DIRETAMENTE a partir do histórico visível nesta conversa, sem delegar para o analista e sem consultar o banco.
+   - Se a pessoa fizer uma pergunta curta ou elíptica que dá continuidade ao assunto anterior ("e na Tracbel?", "e ontem?", "e na Agrominas?"), use o contexto recente da conversa (o que foi perguntado antes: tempo, tarefas, weekly, etc.) para formular o pedido autossuficiente completo para o especialista correto. Nunca trate perguntas de continuidade como ambíguas se o contexto anterior esclarece o assunto.
 
 Quem faz o quê:
 - Perguntas sobre dados já registrados (o que fiz, quanto tempo, em que projeto) → analista.
-- Texto para slide, weekly, status report, resumo executivo → redator.
+- Texto para slide, weekly, status report, resumo da semana por assunto / resumo de sexta-feira → redator.
 - Quadro de tarefas, pendências, prazos, criar/mover tarefa → planejador.
 - Registrar um trabalho já realizado a partir de um relato → registro.
 
-Saudação, agradecimento ou pergunta sobre o que você faz: responda direto, sem delegar.`;
+Saudação, agradecimento, pergunta sobre o que você faz, ou perguntas sobre o que foi dito na conversa atual: responda direto, sem delegar.`;
 
 const ORQUESTRADOR_NEGATIVAS = [
   // Esta regra existe por um bug real: os exemplos abaixo traziam datas
@@ -70,6 +73,18 @@ const ORQUESTRADOR_EXEMPLOS = [
     saida: 'Nesta semana ‹período que o especialista devolveu› você registrou ‹total› em Projetos - Rede Pró, em ‹n› atividades.'
   },
   {
+    tipo: 'pergunta de continuidade no mesmo contexto',
+    entrada: 'e na Tracbel?',
+    ferramentas: ['delegar_analista (pedido: "Some o tempo gasto no projeto Tracbel nesta semana.")'],
+    saida: 'Nesta semana ‹período que o especialista devolveu› você registrou ‹total› em Tracbel, em ‹n› atividades.'
+  },
+  {
+    tipo: 'pergunta sobre a conversa atual / o que acabou de falar',
+    entrada: 'o que eu acabei de falar?',
+    ferramentas: [],
+    saida: 'Você acabou de me perguntar ‹resumo da fala anterior do usuário na conversa›.'
+  },
+  {
     tipo: 'delegacao dupla',
     entrada: 'me dá um resumo: o que eu fiz essa semana e o que tá atrasado',
     ferramentas: ['delegar_analista', 'delegar_planejador'],
@@ -78,18 +93,19 @@ const ORQUESTRADOR_EXEMPLOS = [
       '**Atrasadas** — ‹n› tarefas: ‹títulos com os dias de atraso›.'
   },
   {
+    tipo: 'resumo da semana por assunto (formato de sexta-feira)',
+    entrada: 'gera o resumo da semana por assunto para enviar hoje',
+    ferramentas: ['delegar_redator (pedido: "Gere o Resumo da Semana por Assunto (formato de envio de sexta-feira) para esta semana, cobrindo apenas desenvolvimento e construção e excluindo reuniões e atualização de apresentação.")'],
+    saida: '(o texto do redator, repassado sem alteração)'
+  },
+  {
     tipo: 'repasse literal do redator',
     entrada: 'gera o texto do weekly da RedePRO',
     ferramentas: ['delegar_redator'],
     saida: '(o texto do redator, repassado sem alteração)'
-  },
-  {
-    tipo: 'pedido ambiguo',
-    entrada: 'e a Tracbel?',
-    ferramentas: [],
-    saida: 'O que você quer saber da Tracbel: o tempo gasto, o que foi feito, as tarefas em aberto, ou o texto do weekly?'
   }
 ];
+
 
 export function criarOrquestradorAgent({ ferramentasDeDelegacao, agentRuntime }) {
   return criarAgenteLlm({
